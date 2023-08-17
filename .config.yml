@@ -1,0 +1,69 @@
+downloadDirectory: downloads
+installationDirectory: installs
+packages:
+  - name: Grafana
+    url: 
+      windows: https://dl.grafana.com/oss/release/grafana-10.0.1.linux-amd64.tar.gz
+      linux: https://dl.grafana.com/oss/release/grafana-10.0.1.linux-amd64.tar.gz
+      mac: https://dl.grafana.com/oss/release/grafana-10.0.1.linux-amd64.tar.gz
+    runCommand: 
+      windows: "./grafana/bin/grafana server"
+      linux: "./grafana/bin/grafana server"
+      mac: "./grafana/bin/grafana server"
+    dependency:
+      - Otel Collector
+    installModeSupport:
+      - full
+  - name: Loki
+    url: 
+      windows: https://github.com/grafana/loki/releases/download/v2.8.2/loki-linux-amd64.zip
+      linux: https://github.com/grafana/loki/releases/download/v2.8.2/loki-linux-amd64.zip
+      mac: https://github.com/grafana/loki/releases/download/v2.8.2/loki-linux-amd64.zip
+    runCommand: 
+      windows: "./loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
+      linux: "./loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
+      mac: "./loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
+    dependency:
+      - Otel Collector
+    installModeSupport:
+      - full
+  - name: Otel Collector
+    url: 
+      windows: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.80.0/otelcol-contrib_0.80.0_linux_amd64.tar.gz
+      linux: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.80.0/otelcol-contrib_0.80.0_linux_amd64.tar.gz
+      mac:  https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.80.0/otelcol-contrib_0.80.0_linux_amd64.tar.gz
+    runCommand: 
+      windows: "./otelcol-contrib --config config.yaml > logs/otel.log 2> logs/otel_err.log &"
+      linux: "./otelcol-contrib --config config.yaml > logs/otel.log 2> logs/otel_err.log &"
+      mac: "./otelcol-contrib --config config.yaml > logs/otel.log 2> logs/otel_err.log &"
+    dependency:
+    installModeSupport:
+      - full
+  - name: Promscale
+    url: 
+      windows: https://github.com/timescale/promscale/releases/download/0.17.0/promscale_0.17.0_Linux_x86_64 
+      linux: https://github.com/timescale/promscale/releases/download/0.17.0/promscale_0.17.0_Linux_x86_64
+      mac: https://github.com/timescale/promscale/releases/download/0.17.0/promscale_0.17.0_Linux_x86_64
+    runCommand: 
+      windows: "./loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
+      linux: "./loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
+      mac: "./loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
+    dependency:
+      - Otel Collector
+      - Grafana
+    installModeSupport:
+      - full
+  - name: Test
+    url: 
+      windows: https://www.google.com
+      linux: https://www.google.com
+      mac: https://www.google.com
+    runCommand: 
+      windows: "cat installs/*"
+      linux: "cat installs/*"
+      mac: "cat installs/*"
+    dependency:
+      - Otel Collector
+      - Grafana
+    installModeSupport:
+      - minimal
