@@ -14,22 +14,22 @@ windows_arm64: observinstaller_windows_arm64
 mac_arm64: observinstaller_mac_arm64
 
 observinstaller_linux_x64: main.go
-	GOOS=linux ARCH=${ARCH_PC} go build -o $@
+	GOOS=linux GOARCH=${ARCH_PC} go build -o $@
 
 observinstaller_windows_x64: main.go
-	GOOS=windows ARCH=${ARCH_PC} go build -o $@
+	GOOS=windows GOARCH=${ARCH_PC} go build -o $@
 
 observinstaller_mac_x64: main.go
-	GOOS=darwin ARCH=${ARCH_PC} go build -o $@
+	GOOS=darwin GOARCH=${ARCH_PC} go build -o $@
 
 observinstaller_linux_arm64: main.go
-	GOOS=linux ARCH=${ARCH_ARM} go build -o $@
+	GOOS=linux GOARCH=${ARCH_ARM} go build -o $@
 
 observinstaller_windows_arm64: main.go
-	GOOS=windows ARCH=${ARCH_ARM} go build -o $@
+	GOOS=windows GOARCH=${ARCH_ARM} go build -o $@
 
 observinstaller_mac_arm64: main.go
-	GOOS=darwin ARCH=${ARCH_ARM} go build -o $@
+	GOOS=darwin GOARCH=${ARCH_ARM} go build -o $@
 
 clean: 
 	rm observinstaller_*

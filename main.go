@@ -72,6 +72,7 @@ func main() {
 
 	if downloadOptions != nil {
 		os.MkdirAll(fileConfig.DownloadDirectory, os.ModePerm.Perm())
+		os.MkdirAll(fileConfig.InstallationDirectory, os.ModePerm.Perm())
 		for _, pkg := range fileConfig.Pkg {
 			for _, installType := range pkg.InstallModeSupport {
 				if installType == downloadOptions.InstallationType {
@@ -85,6 +86,7 @@ func main() {
 						url = pkg.Url.Mac
 					}
 
+					// Download
 					fileName := path.Base(url)
 					destLoc := fileConfig.DownloadDirectory + string(os.PathSeparator) + fileName
 
@@ -95,8 +97,17 @@ func main() {
 						if ops.DownloadFile(url, destLoc) {
 							fmt.Fprintf(os.Stdin, "%s successfully downloaded to dest: %s\n", fileName, destLoc)
 						}
+					} else {
+						// File already present
+						fmt.Fprintf(os.Stdin, "File: %s is already present at: %s\n", fileName, destLoc)
 					}
 
+					// Install
+					if ops.ExtractToLocation(destLoc, fileConfig.InstallationDirectory) {
+						fmt.Fprintf(os.Stdin, "%s successfully installed at location: %s\n", pkg.Name, fileConfig.InstallationDirectory)
+					} else {
+						fmt.Fprintf(os.Stderr, "failed to extract file %s at location %s\n", destLoc, fileConfig.InstallationDirectory)
+					}
 					break
 				}
 			}
