@@ -7,10 +7,6 @@ import (
 	"os"
 )
 
-const (
-	SHORT_HELP = "h"
-)
-
 func ConfigureDownloadFlagSet(configure bool, flag *flag.FlagSet) *conf.DownloadOptions {
 	var downloadOptions *conf.DownloadOptions = nil
 
@@ -18,14 +14,13 @@ func ConfigureDownloadFlagSet(configure bool, flag *flag.FlagSet) *conf.Download
 		return downloadOptions
 	}
 
-	minimalFlag := flag.Bool(conf.INSTALLATION_TYPE_MINIMAL, false, "Download the minimum required packages for observability to work (def)")
-	fullFlag := flag.Bool(conf.INSTALLATION_TYPE_FULL, false, "Download the full packages for observability")
-	localHelpShortFlag := flag.Bool(SHORT_HELP, false, "download help text")
+	minimalFlag := flag.Bool(conf.INSTALLATION_TYPE_MINIMAL, false, "download the minimum required packages for observability to work (def)")
+	fullFlag := flag.Bool(conf.INSTALLATION_TYPE_FULL, false, "download the full packages for observability")
+	localHelpShortFlag := flag.Bool(conf.SHORT_HELP, false, "download help text")
 
 	totalActivatedOptions := 0
 
 	if err := flag.Parse(os.Args[2:]); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse arguments: %v\n", err)
 	}
 
 	if *minimalFlag {
@@ -62,14 +57,35 @@ func ConfigureRunFlagSet(configure bool, flag *flag.FlagSet) *conf.RunOptions {
 		return runOptions
 	}
 
-	localHelpShortFlag := flag.Bool(SHORT_HELP, false, "run help text")
+	minimalFlag := flag.Bool(conf.INSTALLATION_TYPE_MINIMAL, false, "run the minimum set-up for observability, if present")
+	fullFlag := flag.Bool(conf.INSTALLATION_TYPE_FULL, false, "run the full set-up for observability, if present")
+	localHelpShortFlag := flag.Bool(conf.SHORT_HELP, false, "run help text")
+	totalActivatedOptions := 0
 
 	if err := flag.Parse(os.Args[2:]); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse arguments: %v\n", err)
 	}
 
-	if *localHelpShortFlag {
+	if *minimalFlag {
+		totalActivatedOptions += 1
+		runOptions = &conf.RunOptions{ 
+			RunType: conf.INSTALLATION_TYPE_MINIMAL,
+		}
+	}
+
+	if *fullFlag {
+		totalActivatedOptions += 1
+		runOptions = &conf.RunOptions{
+			RunType: conf.INSTALLATION_TYPE_FULL,
+		}
+	}
+
+	if *localHelpShortFlag || totalActivatedOptions == 0 {
 		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		flag.PrintDefaults()
+	} else if totalActivatedOptions == 1 {
+	} else {
+		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(os.Stderr, "Only one of the options is allowed at a time\n")
 		flag.PrintDefaults()
 	}
 
@@ -83,16 +99,18 @@ func ConfigureKillFlagSet(configure bool, flag *flag.FlagSet) *conf.KillOptions 
 		return killOptions
 	}
 
-	localHelpShortFlag := flag.Bool(SHORT_HELP, false, "kill help text")
+	allFlag := flag.Bool(conf.KILL_ALL, false, "kill all the running applications")
+	localHelpShortFlag := flag.Bool(conf.SHORT_HELP, false, "kill help text")
 
 	if err := flag.Parse(os.Args[2:]); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse arguments: %v\n", err)
 	}
 
 	if *localHelpShortFlag {
 		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
 		flag.PrintDefaults()
-	}
+	} else if *allFlag	{
+		killOptions = &conf.KillOptions { KillType: conf.KILL_ALL }
+	} 
 
 	return killOptions
 }
@@ -104,14 +122,43 @@ func ConfigureRemoveFlagSet(configure bool, flag *flag.FlagSet) *conf.RemoveOpti
 		return removeOptions
 	}
 
-	localHelpShortFlag := flag.Bool(SHORT_HELP, false, "remove help text")
+	downloadFlag := flag.Bool(conf.REMOVE_TYPE_DOWNLOAD, false, "remove the downloads folder set-up")
+	installFlag := flag.Bool(conf.REMOVE_TYPE_INSTALL, false, "remove the installation folder set-up")
+	allFlag := flag.Bool(conf.REMOVE_TYPE_ALL, false, "remove downloads and installation folder set-up")
+	localHelpShortFlag := flag.Bool(conf.SHORT_HELP, false, "run help text")
+	totalActivatedOptions := 0
 
 	if err := flag.Parse(os.Args[2:]); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse arguments: %v\n", err)
 	}
 
-	if *localHelpShortFlag {
+	if *downloadFlag {
+		totalActivatedOptions += 1
+		removeOptions = &conf.RemoveOptions{
+			RemoveType: conf.REMOVE_TYPE_DOWNLOAD,
+		}
+	}
+
+	if *installFlag{
+		totalActivatedOptions += 1
+		removeOptions = &conf.RemoveOptions{
+			RemoveType: conf.REMOVE_TYPE_INSTALL,
+		}
+	}
+
+	if *allFlag{
+		totalActivatedOptions += 1
+		removeOptions = &conf.RemoveOptions{
+			RemoveType: conf.REMOVE_TYPE_ALL,
+		}
+	}
+
+	if *localHelpShortFlag || totalActivatedOptions == 0 {
 		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		flag.PrintDefaults()
+	} else if totalActivatedOptions == 1 {
+	} else {
+		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(os.Stderr, "Only one of the options is allowed at a time\n")
 		flag.PrintDefaults()
 	}
 

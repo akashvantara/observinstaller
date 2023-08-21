@@ -1,3 +1,5 @@
+installs/*
+downloads/*
+data/*
+.observinst
 observinstaller_*
-installs/**
-downloads/**
