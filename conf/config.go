@@ -41,7 +41,8 @@ const (
 	REMOVE_TYPE_INSTALL  = "i"
 	REMOVE_TYPE_ALL      = "a"
 
-	KILL_ALL = "a"
+	KILL_ALL         = "a"
+	KILL_RESTART_ALL = "r"
 
 	OS_WIN = "windows"
 	OS_LIN = "linux"
@@ -58,11 +59,11 @@ type FileConfig struct {
 }
 
 type Package struct {
-	Name               string    `yaml:"name"`
-	Url                OS        `yaml:"url"`
-	Run                RunConfig `yaml:"run"`
+	Name string    `yaml:"name"`
+	Url  OS        `yaml:"url"`
+	Run  RunConfig `yaml:"run"`
 	//Dependency         []string  `yaml:"dependency"`
-	InstallModeSupport []string  `yaml:"installModeSupport"`
+	InstallModeSupport []string `yaml:"installModeSupport"`
 }
 
 type RunConfig struct {

@@ -14,8 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const ()
-
 func main() {
 	confFile, err := os.ReadFile(".config.yml")
 	if err != nil {
@@ -27,7 +25,7 @@ func main() {
 	err = yaml.Unmarshal(confFile, &fileConfig)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't unmarshal .config.yml to config\nerr: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Couldn't unmarshal .config.yml to config, err: %v\n", err)
 		return
 	}
 
@@ -39,7 +37,7 @@ func main() {
 	err = yaml.Unmarshal(lastRunFile, &lastRunConfig)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't unmarshal .observinst to config\nerr: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Couldn't unmarshal .observinst to config, err: %v\n", err)
 		return
 	}
 
@@ -180,9 +178,11 @@ func main() {
 					cmd, err := conf.StartProgram(command, runArgs, runEnvVars)
 
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v\n", *runCommand, err)
+						fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v, please run download command first if %s is not installed\n",
+							*runCommand, err, pkg.Name,
+						)
 					} else {
-						fmt.Fprintf(os.Stdin, "Executing '%s', args: %v, envs: %v\n, PID: %d\n", *runCommand, runArgs, runEnvVars, cmd.Process.Pid)
+						fmt.Fprintf(os.Stdin, "Executing '%s', args: %v, envs: %v, PID: %d\n", *runCommand, runArgs, runEnvVars, cmd.Process.Pid)
 						lastRunConfig.RunningApps = append(lastRunConfig.RunningApps, conf.ProcessPidPair{Name: pkg.Name, PID: cmd.Process.Pid})
 					}
 				}
@@ -191,7 +191,7 @@ func main() {
 	} else if killOptions != nil {
 		// Don't fail in this branch as it writes the stuff to the last run file
 		var killCommand string
-		var killArgs []string 
+		var killArgs []string
 		var killEnvVars []string
 		var argIdx int8 = 0
 		switch osType {
@@ -220,12 +220,73 @@ func main() {
 							fmt.Fprintf(os.Stdin, "Killed %s\n", pkg.Name)
 							lastRunConfig.RunningApps[currentRunningAppIdx].Name = ""
 						}
+
+						if killOptions.Restart {
+							var url *string
+							var runCommand *string
+							var command string
+							var runArgs []string = pkg.Run.Args
+							var runEnvVars []string = pkg.Run.EnvVariables
+
+							switch osType {
+							case conf.OS_WIN:
+								url = &pkg.Url.Windows
+								runCommand = &pkg.Run.Command.Windows
+							case conf.OS_LIN:
+								url = &pkg.Url.Linux
+								runCommand = &pkg.Run.Command.Linux
+							case conf.OS_MAC:
+								url = &pkg.Url.Mac
+								runCommand = &pkg.Run.Command.Mac
+							}
+
+							if url == nil || *url == "" {
+								command = *runCommand
+							} else {
+								command = fileConfig.InstallationDirectory +
+									string(os.PathSeparator) +
+									conf.NormalizeName(pkg.Name) +
+									string(os.PathSeparator) +
+									*runCommand
+							}
+							cmd, err := conf.StartProgram(command, runArgs, runEnvVars)
+
+							if err != nil {
+								fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v\n", *runCommand, err)
+							} else {
+								fmt.Fprintf(os.Stdin, "Executing '%s', args: %v, envs: %v\n, PID: %d\n", *runCommand, runArgs, runEnvVars, cmd.Process.Pid)
+								lastRunConfig.RunningApps = append(lastRunConfig.RunningApps, conf.ProcessPidPair{Name: pkg.Name, PID: cmd.Process.Pid})
+							}
+						}
 					}
 				}
 			}
 		}
 	} else if removeOptions != nil {
-	} else {
+		_, downloadDirErr := os.Stat(fileConfig.DownloadDirectory)
+		_, installationDirErr := os.Stat(fileConfig.InstallationDirectory)
+
+		if conf.REMOVE_TYPE_DOWNLOAD == removeOptions.RemoveType || conf.REMOVE_TYPE_ALL == removeOptions.RemoveType {
+			if downloadDirErr != nil {
+				fmt.Fprintf(os.Stdin, "Download directory '%s' doesn't exist, nothing to delete\n", fileConfig.DownloadDirectory)
+			} else {
+				fmt.Fprintf(os.Stdin, "Removing directory '%s'\n", fileConfig.DownloadDirectory)
+				if err := os.RemoveAll(fileConfig.DownloadDirectory); err != nil {
+					fmt.Fprintf(os.Stderr, "Error while removing directoy '%s', err: %v\n", fileConfig.DownloadDirectory, err)
+				}
+			}
+		}
+
+		if conf.REMOVE_TYPE_INSTALL == removeOptions.RemoveType || conf.REMOVE_TYPE_ALL == removeOptions.RemoveType {
+			if installationDirErr != nil {
+				fmt.Fprintf(os.Stdin, "Install directory '%s' doesn't exist, nothing to delete\n", fileConfig.InstallationDirectory)
+			} else {
+				fmt.Fprintf(os.Stdin, "Removing directory '%s'\n", fileConfig.InstallationDirectory)
+				if err := os.RemoveAll(fileConfig.InstallationDirectory); err != nil {
+					fmt.Fprintf(os.Stderr, "Error while removing directoy '%s', err: %v\n", fileConfig.InstallationDirectory, err)
+				}
+			}
+		}
 	}
 
 	// Modify the last run config for house-keeping

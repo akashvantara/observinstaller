@@ -10,6 +10,7 @@ type RunOptions struct {
 
 type KillOptions struct {
 	KillType string // same as installation type
+	Restart  bool
 }
 
 type RemoveOptions struct {

@@ -21,6 +21,7 @@ func ConfigureDownloadFlagSet(configure bool, flag *flag.FlagSet) *conf.Download
 	totalActivatedOptions := 0
 
 	if err := flag.Parse(os.Args[2:]); err != nil {
+		return downloadOptions
 	}
 
 	if *minimalFlag {
@@ -63,11 +64,12 @@ func ConfigureRunFlagSet(configure bool, flag *flag.FlagSet) *conf.RunOptions {
 	totalActivatedOptions := 0
 
 	if err := flag.Parse(os.Args[2:]); err != nil {
+		return runOptions
 	}
 
 	if *minimalFlag {
 		totalActivatedOptions += 1
-		runOptions = &conf.RunOptions{ 
+		runOptions = &conf.RunOptions{
 			RunType: conf.INSTALLATION_TYPE_MINIMAL,
 		}
 	}
@@ -100,17 +102,29 @@ func ConfigureKillFlagSet(configure bool, flag *flag.FlagSet) *conf.KillOptions 
 	}
 
 	allFlag := flag.Bool(conf.KILL_ALL, false, "kill all the running applications")
+	restartFlag := flag.Bool(conf.KILL_RESTART_ALL, false, "restart all the running applications")
 	localHelpShortFlag := flag.Bool(conf.SHORT_HELP, false, "kill help text")
+	totalActivatedOptions := 0
 
 	if err := flag.Parse(os.Args[2:]); err != nil {
+		return killOptions
 	}
 
-	if *localHelpShortFlag {
+	if *allFlag {
+		totalActivatedOptions += 1
+	}
+	if *restartFlag {
+		totalActivatedOptions += 1
+	}
+
+	if *localHelpShortFlag || totalActivatedOptions == 0 {
 		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
 		flag.PrintDefaults()
-	} else if *allFlag	{
-		killOptions = &conf.KillOptions { KillType: conf.KILL_ALL }
-	} 
+	} else if *allFlag {
+		killOptions = &conf.KillOptions{KillType: conf.KILL_ALL, Restart: false}
+	} else if *restartFlag {
+		killOptions = &conf.KillOptions{KillType: conf.KILL_ALL, Restart: true}
+	}
 
 	return killOptions
 }
@@ -129,6 +143,7 @@ func ConfigureRemoveFlagSet(configure bool, flag *flag.FlagSet) *conf.RemoveOpti
 	totalActivatedOptions := 0
 
 	if err := flag.Parse(os.Args[2:]); err != nil {
+		return removeOptions
 	}
 
 	if *downloadFlag {
@@ -138,14 +153,14 @@ func ConfigureRemoveFlagSet(configure bool, flag *flag.FlagSet) *conf.RemoveOpti
 		}
 	}
 
-	if *installFlag{
+	if *installFlag {
 		totalActivatedOptions += 1
 		removeOptions = &conf.RemoveOptions{
 			RemoveType: conf.REMOVE_TYPE_INSTALL,
 		}
 	}
 
-	if *allFlag{
+	if *allFlag {
 		totalActivatedOptions += 1
 		removeOptions = &conf.RemoveOptions{
 			RemoveType: conf.REMOVE_TYPE_ALL,

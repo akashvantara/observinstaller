@@ -2,4 +2,4 @@ installs/*
 downloads/*
 data/*
 .observinst
-observinstaller_*
+observinstaller*
