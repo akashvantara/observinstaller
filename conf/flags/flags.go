@@ -179,3 +179,48 @@ func ConfigureRemoveFlagSet(configure bool, flag *flag.FlagSet) *conf.RemoveOpti
 
 	return removeOptions
 }
+
+func ConfigureOtelFlagSet(configure bool, flag *flag.FlagSet) *conf.OtelOptions {
+	var otelOptions *conf.OtelOptions = nil
+
+	if !configure {
+		return otelOptions
+	}
+
+	listFlag := flag.Bool(conf.OTEL_LIST_CFG, false, "list all the configs present for OTel for config preparation")
+	buildFlag := flag.Bool(conf.OTEL_BUILD_CFG, false, "build the default configuration dependent on the packages present in .config.yml")
+	localHelpShortFlag := flag.Bool(conf.SHORT_HELP, false, "run help text")
+	totalActivatedOptions := 0
+
+	if err := flag.Parse(os.Args[2:]); err != nil {
+		return otelOptions
+	}
+
+	if *listFlag {
+		totalActivatedOptions += 1
+		otelOptions = &conf.OtelOptions{
+			List: true,
+			Build: false,
+		}
+	}
+
+	if *buildFlag {
+		totalActivatedOptions += 1
+		otelOptions = &conf.OtelOptions{
+			List: false,
+			Build: true,
+		}
+	}
+
+	if *localHelpShortFlag || totalActivatedOptions == 0 {
+		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		flag.PrintDefaults()
+	} else if totalActivatedOptions == 1 {
+	} else {
+		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(os.Stderr, "Only one of the options is allowed at a time\n")
+		flag.PrintDefaults()
+	}
+
+	return otelOptions
+}

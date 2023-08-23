@@ -1,0 +1,218 @@
+receivers:
+  filelog:
+    include: [ /var/log/pods/*/*/*.log ]
+    # Exclude collector container's logs. The file format is /var/log/pods/<namespace_name>_<pod_name>_<pod_uid>/<container_name>/<run_id>.log
+    exclude: [ /var/log/pods/default_otel-collector*_*/css-otelcollector-client/*.log ]
+    start_at: end
+    storage: file_storage
+    include_file_path: true
+    include_file_name: false
+    operators:
+      # Find out which format is used by kubernetes
+      - type: router
+        id: get-format
+        routes:
+          - output: parser-docker
+            expr: 'body matches "^\\{"'
+          - output: parser-crio
+            expr: 'body matches "^[^ Z]+ "'
+          - output: parser-containerd
+            expr: 'body matches "^[^ Z]+Z"'
+      # Parse CRI-O format
+      - type: regex_parser
+        id: parser-crio
+        regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+        output: extract_metadata_from_filepath
+        timestamp:
+          parse_from: attributes.time
+          layout_type: gotime
+          layout: '2006-01-02T15:04:05.000000000-07:00'
+      # Parse CRI-Containerd format
+      - type: regex_parser
+        id: parser-containerd
+        regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+        output: extract_metadata_from_filepath
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+      # Parse Docker format
+      - type: json_parser
+        id: parser-docker
+        output: extract_metadata_from_filepath
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+      # Extract metadata from file path
+      - type: regex_parser
+        id: extract_metadata_from_filepath
+        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
+        parse_from: attributes["log.file.path"]
+      # Rename attributes
+      - type: move
+        from: attributes.stream
+        to: attributes["log.iostream"]
+      - type: move
+        from: attributes.container_name
+        to: resource["k8s.container.name"]
+      - type: move
+        from: attributes.namespace
+        to: resource["k8s.namespace.name"]
+      - type: move
+        from: attributes.pod_name
+        to: resource["k8s.pod.name"]
+      - type: move
+        from: attributes.restart_count
+        to: resource["k8s.container.restart_count"]
+      - type: move
+        from: attributes.uid
+        to: resource["k8s.pod.uid"]
+      # Clean up log body
+      - type: move
+        from: attributes.log
+        to: body
+  opencensus:
+    endpoint: localhost:55678
+  otlp:
+    protocols:
+      grpc:
+      http:
+  prometheus/self:
+    config:
+      global:
+        scrape_interval: 150s
+        scrape_timeout: 10s
+      scrape_configs:
+      - job_name: 'otel'
+        scrape_interval: 30s
+        static_configs:
+        - targets:
+          - localhost:8888
+  zipkin:
+    endpoint: localhost:9411
+processors:
+  attributes/insert:
+    actions:
+      - key: ENVIRONMENT
+        value: dev
+        action: insert
+      - key: CLUSTER_ID
+        value: dev-def
+        action: insert
+      - key: PROJECT_NAME
+        value: Observability Framework
+        action: insert
+      - key: BUILD_VERSION
+        value: Observability-v0.1.0
+        action: insert
+  batch:
+  filter/body:
+    logs:
+      exclude:
+        match_type: regexp
+        bodies:
+        - ".*/health"
+        - ".*/healthz"
+    spans:
+      exclude:
+        match_type: regexp
+        span_names:
+        - .*.health ## this is controller method name
+        - /health  ## this is api uri
+        - /healthz
+  memory_limiter:
+    limit_percentage: 85
+    check_interval: 1s
+    spike_limit_percentage: 10
+  resource/event:
+    attributes:
+      - action: insert
+        key: loki.resource.labels
+        value: EventName, EventKind, EventNode, EventClusterId, BUILD_VERSION
+      - key: EventName
+        from_attribute: k8s.object.name
+        action: insert
+      - key: EventKind
+        from_attribute: k8s.object.kind
+        action: insert
+      - key: EventNode
+        from_attribute: k8s.node.name
+        action: insert
+      - key: EventClusterId
+        value: dev-chandrila
+        action: insert
+      - key: BUILD_VERSION
+        value: Observability-v1.0.0-0c1d3
+        action: insert
+  resource/logs:
+    attributes:
+      - action: insert
+        key: loki.resource.labels
+        value: PodName, PodContainerName, PodRestartCount, PodRestartCount, PodUid, PodNamespace, PodClusterId, BUILD_VERSION
+      - key: PodName
+        from_attribute: k8s.pod.name
+        action: insert
+      - key: PodContainerName
+        from_attribute: k8s.container.name
+        action: insert
+      - key: PodRestartCount
+        from_attribute: k8s.container.restart_count
+        action: insert
+      - key: PodUid
+        from_attribute: k8s.pod.uid
+        action: insert
+      - key: PodNamespace
+        from_attribute: k8s.namespace.name
+        action: insert
+      - key: PodClusterId
+        value: dev-chandrila
+        action: insert
+      - key: BUILD_VERSION
+        value: Observability-v1.0.0-0c1d3
+        action: insert
+exporters:
+  loki/event:
+    endpoint: http://localhost:3100/loki/api/v1/push
+    sending_queue:
+      storage: file_storage
+    tls:
+      insecure: true
+  loki/logs:
+    endpoint: http://localhost:3100/loki/api/v1/push
+    sending_queue:
+      storage: file_storage
+    tls:
+      insecure: true
+  prometheusremotewrite:
+    endpoint: http://localhost:9201/write
+    tls:
+      insecure: true
+  otlp/promscale:
+    endpoint: http://localhost:9202
+    tls:
+      insecure: true
+    sending_queue:
+      storage: file_storage
+  otlp/tempo:
+    endpoint: http://localhost:4317
+    tls:
+      insecure: true
+    sending_queue:
+      storage: file_storage
+extensions:
+  file_storage:
+    directory: ./otel
+    timeout: 10s
+    compaction:
+      on_rebound: true
+      directory: ./otel/compaction
+      max_transaction_size: 32_768
+      rebound_needed_threshold_mib: 128
+      rebound_trigger_threshold_mib: 128
+  health_check:
+    endpoint: ":13133"
+  oauth2client:
+    client_id: opentelemetry
+    client_secret: tLTiUouOfBBuYEwZhQ8Nlzg72L5S0nIZ
+    endpoint_params:
+      grant_type: client_credentials
+    token_url: http://common-auth.keycloak.dev-vkcsaf.hitachi-lumada.io/realms/opentelemetry/protocol/openid-connect/token

@@ -53,6 +53,7 @@ func main() {
 	runFlagSet := flag.NewFlagSet(conf.COMMAND_RUN, flag.ContinueOnError)
 	killFlagSet := flag.NewFlagSet(conf.COMMAND_KILL, flag.ContinueOnError)
 	removeFlagSet := flag.NewFlagSet(conf.COMMAND_REMOVE, flag.ContinueOnError)
+	otelFlagSet := flag.NewFlagSet(conf.COMMAND_OTEL, flag.ContinueOnError)
 
 	helpShortFlag := flag.Bool("h", false, "Help for the program")
 	flag.Parse()
@@ -66,6 +67,7 @@ func main() {
 	var configureRun bool = false
 	var configureKill bool = false
 	var configureRemove bool = false
+	var configureOtel bool = false
 
 	switch os.Args[1] {
 	case conf.COMMAND_DOWNLOAD:
@@ -76,6 +78,8 @@ func main() {
 		configureKill = true
 	case conf.COMMAND_REMOVE:
 		configureRemove = true
+	case conf.COMMAND_OTEL:
+		configureOtel = true
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command\n")
 		conf.PrintMainUsage()
@@ -85,6 +89,7 @@ func main() {
 	runOptions := flags.ConfigureRunFlagSet(configureRun, runFlagSet)
 	killOptions := flags.ConfigureKillFlagSet(configureKill, killFlagSet)
 	removeOptions := flags.ConfigureRemoveFlagSet(configureRemove, removeFlagSet)
+	otelOptions := flags.ConfigureOtelFlagSet(configureOtel, otelFlagSet)
 
 	osType := runtime.GOOS
 
@@ -181,6 +186,7 @@ func main() {
 
 					var command string
 					if url == nil || *url == "" {
+						fmt.Fprintf(os.Stdin, "URL isn't present, assuming the binary is present already at $PATH\n")
 						command = *runCommand
 					} else {
 						command = fileConfig.InstallationDirectory +
@@ -303,7 +309,11 @@ func main() {
 				}
 			}
 		}
-	} else {
+	} else if otelOptions != nil {
+		if otelOptions.List {
+			ops.ListOtelOptions()
+		} else if otelOptions.Build {
+		}
 	}
 
 	// Modify the last run config for house-keeping

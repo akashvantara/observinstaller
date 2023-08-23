@@ -35,6 +35,7 @@ const (
 	COMMAND_RUN      = "run"
 	COMMAND_KILL     = "kill"
 	COMMAND_REMOVE   = "remove"
+	COMMAND_OTEL     = "otel"
 
 	REMOVE_TYPE_DOWNLOAD = "d"
 	REMOVE_TYPE_INSTALL  = "i"
@@ -42,6 +43,9 @@ const (
 
 	KILL_ALL         = "a"
 	KILL_RESTART_ALL = "r"
+
+	OTEL_BUILD_CFG = "b"
+	OTEL_LIST_CFG  = "l"
 
 	OS_WIN = "windows"
 	OS_LIN = "linux"
@@ -99,8 +103,8 @@ type BaseOtelConfig struct {
 // Functions
 func PrintMainUsage() {
 	fmt.Fprintf(os.Stderr, "USAGE: %s <command> <options>\n", PROG_NAME)
-	fmt.Fprintf(os.Stderr, "  Supported commands:\n  \t%s\n  \t%s\n  \t%s\n  \t%s\n",
-		COMMAND_DOWNLOAD, COMMAND_RUN, COMMAND_KILL, COMMAND_REMOVE)
+	fmt.Fprintf(os.Stderr, "  Supported commands:\n    %s\n    %s\n    %s\n    %s\n    %s\n",
+		COMMAND_DOWNLOAD, COMMAND_RUN, COMMAND_KILL, COMMAND_REMOVE, COMMAND_OTEL)
 }
 
 func StartProgram(waitForCompletion bool, waitPeriodBeforeRun int64, command string, args []string, envVars []string) (*exec.Cmd, error) {
