@@ -145,7 +145,6 @@ func main() {
 		}
 	} else if runOptions != nil {
 		// Don't fail in this branch as it writes the stuff to the last run file
-		os.MkdirAll(fileConfig.LogsDirectory, os.ModePerm.Perm())
 		for _, pkg := range fileConfig.Pkg {
 			for _, runType := range pkg.InstallModeSupport {
 				if runType == runOptions.RunType {
@@ -165,6 +164,21 @@ func main() {
 						url = &pkg.Url.Mac
 					}
 
+					var appAlreadyRunning bool = false
+					for _, alreadyRunningApp := range lastRunConfig.RunningApps {
+						if alreadyRunningApp.Name == pkg.Name {
+							fmt.Fprintf(os.Stdin, "%s seems to be already running, PID: %d\n",
+								alreadyRunningApp.Name, alreadyRunningApp.PID,
+							)
+							appAlreadyRunning = true
+							break
+						}
+					}
+
+					if appAlreadyRunning {
+						continue
+					}
+
 					var command string
 					if url == nil || *url == "" {
 						command = *runCommand
@@ -175,7 +189,7 @@ func main() {
 							string(os.PathSeparator) +
 							*runCommand
 					}
-					cmd, err := conf.StartProgram(command, runArgs, runEnvVars)
+					cmd, err := conf.StartProgram(false, 0, command, runArgs, runEnvVars)
 
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v, please run download command first if %s is not installed\n",
@@ -207,19 +221,21 @@ func main() {
 			killCommand = "kill"
 		}
 
-		if killOptions.KillType == conf.KILL_ALL {
+		if len(lastRunConfig.RunningApps) == 0 {
+			fmt.Fprintf(os.Stdin, "No processes are found to run kill\n")
+		} else if killOptions.KillType == conf.KILL_ALL {
 			for _, pkg := range fileConfig.Pkg {
 				for currentRunningAppIdx, runningApp := range lastRunConfig.RunningApps {
 					if runningApp.Name == pkg.Name {
 						killArgs[argIdx] = strconv.Itoa(runningApp.PID)
-						_, err := conf.StartProgram(killCommand, killArgs, killEnvVars)
+						_, err := conf.StartProgram(true, 0, killCommand, killArgs, killEnvVars)
 
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v\n", killCommand, err)
 						} else {
 							fmt.Fprintf(os.Stdin, "Killed %s\n", pkg.Name)
-							lastRunConfig.RunningApps[currentRunningAppIdx].Name = ""
 						}
+						lastRunConfig.RunningApps[currentRunningAppIdx].Name = ""
 
 						if killOptions.Restart {
 							var url *string
@@ -249,12 +265,12 @@ func main() {
 									string(os.PathSeparator) +
 									*runCommand
 							}
-							cmd, err := conf.StartProgram(command, runArgs, runEnvVars)
+							cmd, err := conf.StartProgram(false, 9, command, runArgs, runEnvVars)
 
 							if err != nil {
 								fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v\n", *runCommand, err)
 							} else {
-								fmt.Fprintf(os.Stdin, "Executing '%s', args: %v, envs: %v\n, PID: %d\n", *runCommand, runArgs, runEnvVars, cmd.Process.Pid)
+								fmt.Fprintf(os.Stdin, "Executing '%s', args: %v, envs: %v, PID: %d\n", *runCommand, runArgs, runEnvVars, cmd.Process.Pid)
 								lastRunConfig.RunningApps = append(lastRunConfig.RunningApps, conf.ProcessPidPair{Name: pkg.Name, PID: cmd.Process.Pid})
 							}
 						}
@@ -287,16 +303,17 @@ func main() {
 				}
 			}
 		}
+	} else {
 	}
 
 	// Modify the last run config for house-keeping
-	newRAList := make([]conf.ProcessPidPair, 0, len(lastRunConfig.RunningApps))
+	newRunningAppsList := make([]conf.ProcessPidPair, 0, len(lastRunConfig.RunningApps))
 	for _, processPidPair := range lastRunConfig.RunningApps {
 		if processPidPair.Name != "" {
-			newRAList = append(newRAList, processPidPair)
+			newRunningAppsList = append(newRunningAppsList, processPidPair)
 		}
 	}
-	lastRunConfig.RunningApps = newRAList
+	lastRunConfig.RunningApps = newRunningAppsList
 
 	lastRunConfBytes, err := yaml.Marshal(lastRunConfig)
 	if err != nil {

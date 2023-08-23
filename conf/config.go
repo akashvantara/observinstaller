@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 /*
@@ -20,8 +21,6 @@ packages:
       windows: "./grafana/bin/grafana server"
       linux: "./grafana/bin/grafana server"
       mac: "./grafana/bin/grafana server"
-    dependency:
-      - Otel Collector
     installModeSupport:
       - minimal
       - full
@@ -52,18 +51,18 @@ const (
 )
 
 type FileConfig struct {
-	DownloadDirectory     string    `yaml:"downloadDirectory"`
-	InstallationDirectory string    `yaml:"installationDirectory"`
-	LogsDirectory         string    `yaml:"logsDirectory"`
-	Pkg                   []Package `yaml:"packages"`
+	DownloadDirectory     string         `yaml:"downloadDirectory"`
+	InstallationDirectory string         `yaml:"installationDirectory"`
+	Pkg                   []Package      `yaml:"packages"`
+	BaseOtelConfig        BaseOtelConfig `yaml:"baseOtelConfig"`
 }
 
 type Package struct {
-	Name string    `yaml:"name"`
-	Url  OS        `yaml:"url"`
-	Run  RunConfig `yaml:"run"`
-	//Dependency         []string  `yaml:"dependency"`
-	InstallModeSupport []string `yaml:"installModeSupport"`
+	Name               string        `yaml:"name"`
+	Url                OS            `yaml:"url"`
+	Run                RunConfig     `yaml:"run"`
+	InstallModeSupport []string      `yaml:"installModeSupport"`
+	PkgOtelConfig      PkgOtelConfig `yaml:"pkgOtelConfig"`
 }
 
 type RunConfig struct {
@@ -88,6 +87,15 @@ type ProcessPidPair struct {
 	PID  int    `yaml:"pid"`
 }
 
+type PkgOtelConfig struct {
+	Type   string `yaml:"type"`
+	Config string `yaml:"config"`
+}
+
+type BaseOtelConfig struct {
+	Config string `yaml:"config"`
+}
+
 // Functions
 func PrintMainUsage() {
 	fmt.Fprintf(os.Stderr, "USAGE: %s <command> <options>\n", PROG_NAME)
@@ -95,13 +103,15 @@ func PrintMainUsage() {
 		COMMAND_DOWNLOAD, COMMAND_RUN, COMMAND_KILL, COMMAND_REMOVE)
 }
 
-func StartProgram(command string, args []string, envVars []string) (*exec.Cmd, error) {
+func StartProgram(waitForCompletion bool, waitPeriodBeforeRun int64, command string, args []string, envVars []string) (*exec.Cmd, error) {
 	var cmd *exec.Cmd
+
 	if args == nil || len(args) == 0 {
 		cmd = exec.Command(command)
 	} else {
 		cmd = exec.Command(command, args...)
 	}
+
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -109,7 +119,18 @@ func StartProgram(command string, args []string, envVars []string) (*exec.Cmd, e
 	if envVars == nil || len(envVars) == 0 {
 		cmd.Env = append(cmd.Env, envVars...)
 	}
-	err := cmd.Start()
+
+	if waitPeriodBeforeRun > 0 {
+		time.Sleep(time.Duration(waitPeriodBeforeRun) * time.Second)
+	}
+
+	var err error
+	if waitForCompletion {
+		err = cmd.Run()
+	} else {
+		err = cmd.Start()
+	}
+
 	return cmd, err
 }
 

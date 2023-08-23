@@ -10,9 +10,9 @@ type RunOptions struct {
 
 type KillOptions struct {
 	KillType string // same as installation type
-	Restart  bool
+	Restart  bool	// restart apps instead of killing
 }
 
 type RemoveOptions struct {
-	RemoveType string // -minimal, -full
+	RemoveType string // -d downloads, -i installs, -a all
 }
