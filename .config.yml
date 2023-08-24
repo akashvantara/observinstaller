@@ -1,6 +1,38 @@
 downloadDirectory: downloads
 installationDirectory: installs
 baseOtelConfig: 
+  extensions:
+    - file_storage
+    - health_check
+    - oauth2client
+  pipelines:
+    logs:
+      receivers:
+        - filelog
+      processors:
+        - filter/body
+        - resource/logs
+      exporters:
+        - loki/logs
+    metrics:
+      receivers:
+        - opencensus
+        - otlp
+        - prometheus/self
+      processors:
+        - attributes/insert
+      exporters:
+        - prometheusremotewrite
+    traces:
+      receivers:
+        - otlp
+        - zipkin
+      processors:
+        - attributes/insert
+        - filter/body
+      exporters:
+        - otlp/promscale
+        - otlp/tempo
 packages:
   - name: Grafana
     url: 

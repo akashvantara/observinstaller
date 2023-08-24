@@ -74,8 +74,8 @@ receivers:
     endpoint: localhost:55678
   otlp:
     protocols:
-      grpc:
-      http:
+      grpc: localhost:4317
+      http: localhost:4318
   prometheus/self:
     config:
       global:
@@ -216,3 +216,11 @@ extensions:
     endpoint_params:
       grant_type: client_credentials
     token_url: http://common-auth.keycloak.dev-vkcsaf.hitachi-lumada.io/realms/opentelemetry/protocol/openid-connect/token
+service:
+  telemetry:
+    logs:
+      level: warn
+    metrics:
+      address: 0.0.0.0:8888
+  extensions: []
+  pipelines:

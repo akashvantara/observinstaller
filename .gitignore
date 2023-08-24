@@ -3,3 +3,4 @@ downloads/*
 data/*
 .observinst
 observinstaller*
+otel-config.yaml

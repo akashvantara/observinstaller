@@ -97,7 +97,8 @@ type PkgOtelConfig struct {
 }
 
 type BaseOtelConfig struct {
-	Config string `yaml:"config"`
+	Extensions []string                       `yaml:"extensions"`
+	Pipelines  map[string]map[string][]string `yaml:"pipelines"`
 }
 
 // Functions

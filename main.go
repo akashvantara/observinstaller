@@ -313,6 +313,7 @@ func main() {
 		if otelOptions.List {
 			ops.ListOtelOptions()
 		} else if otelOptions.Build {
+			ops.PrepareOtelCfgFile(&fileConfig, otelOptions.FileName)
 		}
 	}
 

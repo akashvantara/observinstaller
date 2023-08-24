@@ -18,6 +18,7 @@ type RemoveOptions struct {
 }
 
 type OtelOptions struct {
-	Build bool
-	List  bool
+	Build    bool
+	List     bool
+	FileName string
 }

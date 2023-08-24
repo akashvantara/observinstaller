@@ -209,6 +209,7 @@ func ConfigureOtelFlagSet(configure bool, flag *flag.FlagSet) *conf.OtelOptions 
 		otelOptions = &conf.OtelOptions{
 			List: false,
 			Build: true,
+			FileName: "otel-config.yaml",
 		}
 	}
 
