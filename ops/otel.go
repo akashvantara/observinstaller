@@ -118,6 +118,34 @@ func PrepareOtelCfgFile(fileConfig *conf.FileConfig, writeLoc string) bool {
 		}
 		servicePipelineBlockEntry[OTEL_EXPORTERS] = entryArr
 	}
+
+	for _, pkg := range fileConfig.Pkg {
+		if cfgMap[pkg.PkgOtelConfig.Type] != nil {
+			servicePipelineBlockEntry := servicePipelineBlock[pkg.PkgOtelConfig.Pipeline].(map[string]interface{})
+			servicePipelineBlockTypeEntry := servicePipelineBlockEntry[pkg.PkgOtelConfig.Type].([]string)
+			var unmarshalData map[string]interface{} = make(map[string]interface{})
+			if err := yaml.Unmarshal([]byte(pkg.PkgOtelConfig.Config), &unmarshalData); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to parse the otel config inside %s\n", pkg.Name)
+			}
+
+			genBlock := cfgMap[pkg.PkgOtelConfig.Type].(map[string]interface{})
+			for k, v := range unmarshalData {
+				genBlock[k] = v
+
+				similarKFound := false
+				for _, similarK := range servicePipelineBlockEntry[pkg.PkgOtelConfig.Type].([]string) {
+					if similarK == k {
+						similarKFound = true
+						break
+					}
+				}
+
+				if !similarKFound {
+					servicePipelineBlockEntry[pkg.PkgOtelConfig.Type] = append(servicePipelineBlockTypeEntry, k)
+				}
+			}
+		}
+	}
 	serviceBlock[OTEL_PIPELINES] = servicePipelineBlock
 
 	configFile, err := os.OpenFile(writeLoc, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
@@ -141,5 +169,6 @@ func PrepareOtelCfgFile(fileConfig *conf.FileConfig, writeLoc string) bool {
 		return false
 	}
 
+	fmt.Fprintf(os.Stdin, "Config written to file: %s\n", writeLoc)
 	return true
 }

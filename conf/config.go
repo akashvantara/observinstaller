@@ -92,8 +92,9 @@ type ProcessPidPair struct {
 }
 
 type PkgOtelConfig struct {
-	Type   string `yaml:"type"`
-	Config string `yaml:"config"`
+	Type     string `yaml:"type"`
+	Pipeline string `yaml:"pipeline"`
+	Config   string `yaml:"config"`
 }
 
 type BaseOtelConfig struct {

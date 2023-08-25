@@ -313,7 +313,9 @@ func main() {
 		if otelOptions.List {
 			ops.ListOtelOptions()
 		} else if otelOptions.Build {
-			ops.PrepareOtelCfgFile(&fileConfig, otelOptions.FileName)
+			if !ops.PrepareOtelCfgFile(&fileConfig, otelOptions.FileName) {
+				fmt.Fprintf(os.Stderr, "Failed to write/prepare config\n")
+			}
 		}
 	}
 
