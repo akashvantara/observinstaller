@@ -17,6 +17,7 @@ receivers:
           - output: parser-crio
             expr: 'body matches "^[^ Z]+ "'
           - output: parser-containerd
+
             expr: 'body matches "^[^ Z]+Z"'
       # Parse CRI-O format
       - type: regex_parser
@@ -33,6 +34,7 @@ receivers:
         regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
         output: extract_metadata_from_filepath
         timestamp:
+
           parse_from: attributes.time
           layout: '%Y-%m-%dT%H:%M:%S.%LZ'
       # Parse Docker format
@@ -41,11 +43,13 @@ receivers:
         output: extract_metadata_from_filepath
         timestamp:
           parse_from: attributes.time
+
           layout: '%Y-%m-%dT%H:%M:%S.%LZ'
       # Extract metadata from file path
       - type: regex_parser
         id: extract_metadata_from_filepath
         regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
+
         parse_from: attributes["log.file.path"]
       # Rename attributes
       - type: move
@@ -70,13 +74,77 @@ receivers:
       - type: move
         from: attributes.log
         to: body
+  hostmetrics:
+    root_path: /hostfs
+    collection_interval: 10s
+    scrapers:
+        cpu:
+        load:
+        memory:
+        disk:
+        filesystem:
+          exclude_mount_points:
+            mount_points:
+              - /dev/*
+              - /proc/*
+              - /sys/*
+              - /run/k3s/containerd/*
+              - /var/lib/docker/*
+              - /var/lib/kubelet/*
+              - /snap/*
+            match_type: regexp
+          exclude_fs_types:
+            fs_types:
+              - autofs
+              - binfmt_misc
+              - bpf
+              - cgroup2
+              - configfs
+              - debugfs
+              - devpts
+              - devtmpfs
+              - fusectl
+              - hugetlbfs
+              - iso9660
+              - mqueue
+              - nsfs
+              - overlay
+              - proc
+              - procfs
+              - pstore
+              - rpc_pipefs
+              - securityfs
+              - selinuxfs
+              - squashfs
+              - sysfs
+              - tracefs
+            match_type: strict
+        network:
+  kafka/event:
+    brokers: [my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092]
+    topic: observability.saas.event.data
+  kafka/podlog:
+    brokers: [my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092]
+    topic: observability.saas.pod.logs
+  kafka/metrics:
+    brokers: [my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092]
+    topic: observability.saas.metrics
+  kafka/traces:
+    brokers: [my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092]
+    topic: observability.saas.traces
   opencensus:
     endpoint: localhost:55678
   otlp:
     protocols:
-      grpc: localhost:4317
-      http: localhost:4318
-  prometheus/self:
+      grpc:
+      http:
+  postgresql:
+    endpoint: localhost:5432
+    transport: tcp
+    collection_interval: 10s
+    tls:
+      insecure: true
+  prometheus:
     config:
       global:
         scrape_interval: 150s
@@ -87,8 +155,13 @@ receivers:
         static_configs:
         - targets:
           - localhost:8888
+  redis:
+    endpoint: redis-service.test-redis.svc.cluster.local:6379
+    collection_interval: 10s
+    tls:
+      insecure: true
   zipkin:
-    endpoint: localhost:9411
+    endpoint: 0.0.0.0:9411
 processors:
   attributes/insert:
     actions:
@@ -96,13 +169,13 @@ processors:
         value: dev
         action: insert
       - key: CLUSTER_ID
-        value: dev-def
+        value: dev-chandrila
         action: insert
       - key: PROJECT_NAME
         value: Observability Framework
         action: insert
       - key: BUILD_VERSION
-        value: Observability-v0.1.0
+        value: Observability-v1.0.0-0c1d3
         action: insert
   batch:
   filter/body:
@@ -119,6 +192,204 @@ processors:
         - .*.health ## this is controller method name
         - /health  ## this is api uri
         - /healthz
+  filter/regex:
+    metrics:
+      include:
+        match_type: regexp
+        regexp:
+          cacheenabled: true
+        metric_names:
+          - ^apiserver_longrunning_.*
+          - ^apiserver_request(_aborts|_terminations).*(_total)
+          - ^apiserver_(longrunning_gauage|request|tls_handshake_errors_total)
+          - ^argocd_app.*
+          - ^argocd_cluster_(info|(api_resource(s|_objects))|events_total)
+          - ^argocd_git.*
+          - ^argocd_(kubectl_exec_pending|redis_request_total)
+          - ^container_cpu_((usage_seconds|cfs_(periods|throttled_periods))_total|allocation)
+          - ^container_fs_((inodes_(free|total))|(reads|writes)_(bytes_|)total|(limit|usage)_bytes)
+          - ^container_memory_((allocation|working_set|usage)_bytes|cache|rss|swap)
+          - ^container_network_(receive|transmit)_(bytes|packets(_dropped|))_total
+          - ^container_spec_(cpu_shares|memory_limit_bytes)
+          - ^container_start_time_seconds
+          - ^coredns_cache_.*
+          - ^coredns_dns_.*
+          - ^envoy_cluster_upstream_cx_(active|connect_fail|(rx|tx)_bytes_total|total)
+          - ^envoy_server_hot_restart_epoch
+          - ^go_gc_duration_seconds
+          - ^go_goroutines
+          - ^go_memstats_(alloc|heap|next_gc|stack)(_alloc|_inuse|_sys|)(_bytes(_total|))
+          - ^grpc_server_handled_total
+          - ^jvm_gc_collection_.*
+          - ^jvm_gc_pause_.*
+          - ^jvm_memory_.*
+          - ^jvm_threads_current
+          - ^kafka_server_brokertopicmetrics_.*
+          - ^keycloak.*
+          - ^kubecost_.*
+          - ^kubelet_node_(name|config_error)
+          - ^kube_daemonset_status_(desired_number_scheduled|number_ready)
+          - ^kube_deployment_status_replicas(_available|)
+          - ^kube_namespace_created
+          - ^kube_node_(status_(allocatable|capacity(_cpu_cores|_memory_bytes|))|labels)
+          - ^kube_persistentvolumeclaim_(info|labels|resource_requests_storage_bytes)
+          - ^kube_pod_(info|labels|owner|status_phase|container_(resource_(limits|requests(_memory_bytes|))|status_(ready|restarts_total|running|terminated|waiting(_reason|))))
+          - ^kube_replicaset_status_ready_replicas
+          - ^kube_resourcequota
+          - ^kube_service_info
+          - ^kube_statefulset_(status_(observed_generation|replicas(_current|_ready|_updated|))|metadata_generation|replicas)
+          - ^kyverno.*
+          - ^machine_cpu_cores
+          - ^minio_bucket_(objects_size_distribution|replication_received_bytes|usage_(object_total|total_bytes))
+          - ^minio_cluster_((capacity_(raw|usable)_(free|total)_bytes|disk_(free_inodes|(off|on)line_total|total)|nodes_(off|on)line_total))
+          - ^minio_heal_((objects_(heal_|)total)|time_last_activity_nano_seconds)
+          - ^minio_inter_node_traffic_(errors_total|(received|sent)_bytes)
+          - ^minio_node_((process_((cpu_total|starttime|uptime)_seconds|resident_memory_bytes)|disk_(free|total|used)_bytes|file_descriptor_(limit|open)_total|go_routine_total|ilm_(transition_(active|pending)_tasks|versions_scanned|expiry_pending_tasks)|io_(rchar|read|wchar|write)_bytes|scanner_(bucket_scans_(finished|started)|(directories|objects|versions)_scanned)|syscall_(read|write)_total))
+          - ^minio_s3_((requests_(rejected_(auth|header|invalid|timestamp)|waiting)_total|traffic_(received|sent)_bytes))
+          - ^minio_software_(commit_info|version_info)
+          - ^minio_usage_last_activity_nano_seconds
+          - ^node_cpu_se.*
+          - ^node_disk_read.*
+          - ^node_disk_writ.*
+          - ^node_disk_io_t.*
+          - ^node_exporter_build_info
+          - ^node_filesystem_(avail|size)_bytes
+          - ^node_load(1|5|15)
+          - ^node_memory_(Buffers|Cached|Mem(Available|Free|Total))_bytes
+          - ^node_network_(receive|transmit)_b.*
+          - ^node_uname_info
+          - ^node_vmstat_pgmajfault
+          - ^node_(cpu|gpu|ram|total)_hourly_cost
+          - ^otelcol.*
+          - ^pilot_conflict_((inbound_listener|outbound_listener_(http|tcp)_over_current_(tcp|http)))
+          - ^pilot_proxy_convergence.*
+          - ^pilot_services
+          - ^pilot_total_xds_(internal_errors|rejects)
+          - ^pilot_virt_services
+          - ^pilot_xds.*
+          - ^pod_cpu_usage_seconds_total
+          - ^pod_memory_working_set_bytes
+          - ^probe_.*
+          - ^process_(cpu_seconds_total|(max|open)_fds|start_time_seconds|(resident|virtual)_memory_bytes)
+          - ^prometheus_build_info
+          - ^prometheus_config_last_reload_success_timestamp_seconds
+          - ^prometheus_engine_query_duration_seconds(_count|_sum|)
+          - ^prometheus_http_request_duration_.*
+          - ^prometheus_local_storage_target_heap_size_bytes
+          - ^prometheus_notifications(_alertmanagers_discovered|(_dropped|_errors)_total|_latency_seconds_(count|sum)|_queue_(capacity|length)|_sent_total)
+          - ^prometheus_notifications_latency_seconds.*
+          - ^prometheus_rule(_group_(rules|iterations_missed_total|duration_seconds_sum|(interval_|last_duration_)seconds)|_evaluation_failures_total)
+          - ^prometheus_sd_((received_|)updates_total|discovered_targets)
+          - ^prometheus_target_.*
+          - ^prometheus_tsdb_head_(chunks|samples_appended_total|series)
+          - ^redis.*
+          - ^rest_client_requests_t.*
+          - ^rest_client_request_duration_seconds.*
+          - ^sidecar_injection_(success|failure)_total
+          - ^storage_operation_.*
+          - ^strimzi_reconciliations.*
+          - ^zookeeper_((avgrequest|(max|min)request)latency|inmemorydatatree_(node|watch)count|numaliveconnections|outstandingrequests|quorumsize)
+          - apiserver_request
+          - coredns_.*
+          - galley_validation_failed
+          - galley_validation_passed
+          - istio.*
+          - kafka_cluster_partition_atminisr
+          - kafka_cluster_partition_underminisr
+          - kafka_consumergroup_current_offset
+          - kafka_consumergroup_lag
+          - kafka_controller_controllerstats_uncleanleaderelections_total
+          - kafka_controller_kafkacontroller_activecontrollercount
+          - kafka_controller_kafkacontroller_offlinepartitionscount
+          - kafka_log_log_size
+          - kafka_network_socketserver_networkprocessoravgidle_percent
+          - kafka_server_brokertopicmetrics_bytesin_total
+          - kafka_server_brokertopicmetrics_bytesout_total
+          - kafka_server_brokertopicmetrics_failedfetchrequests_total
+          - kafka_server_brokertopicmetrics_failedproducerequests_total
+          - kafka_server_brokertopicmetrics_messagesin_total
+          - kafka_server_brokertopicmetrics_totalfetchrequests_total
+          - kafka_server_brokertopicmetrics_totalproducerequests_total
+          - kafka_server_kafkarequesthandlerpool_requesthandleravgidle_percent
+          - kafka_server_kafkaserver_brokerstate
+          - kafka_server_kafkaserver_linux_disk_read_bytes
+          - kafka_server_kafkaserver_linux_disk_write_bytes
+          - kafka_server_replicamanager_leadercount
+          - kafka_server_replicamanager_partitioncount
+          - kafka_server_replicamanager_underreplicatedpartitions
+          - kafka_server_socket_server_metrics_connection_count
+          - kafka_topic_partition_current_offset
+          - kafka_topic_partitions
+          - kubelet_.*
+          - probe_.*
+          - prometheus_local_storage_target_heap_size_bytes
+          - prometheus_target_sync_length_seconds_sum
+          - sidecar_injection_failure_total
+          - strimzi_resources
+          - up
+          - volume_manager_total_volumes
+          - workqueue_depth
+  filter/strict:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+          - apiserver_longrunning_gauge
+          - apiserver_request
+          - galley_validation_failed
+          - galley_validation_passed
+          - kafka_cluster_partition_atminisr
+          - kafka_cluster_partition_underminisr
+          - kafka_consumergroup_current_offset
+          - kafka_consumergroup_lag
+          - kafka_controller_controllerstats_uncleanleaderelections_total
+          - kafka_controller_kafkacontroller_activecontrollercount
+          - kafka_controller_kafkacontroller_offlinepartitionscount
+          - kafka_log_log_size
+          - kafka_network_socketserver_networkprocessoravgidle_percent
+          - kafka_server_brokertopicmetrics_bytesin_total
+          - kafka_server_brokertopicmetrics_bytesout_total
+          - kafka_server_brokertopicmetrics_failedfetchrequests_total
+          - kafka_server_brokertopicmetrics_failedproducerequests_total
+          - kafka_server_brokertopicmetrics_messagesin_total
+          - kafka_server_brokertopicmetrics_totalfetchrequests_total
+          - kafka_server_brokertopicmetrics_totalproducerequests_total
+          - kafka_server_kafkarequesthandlerpool_requesthandleravgidle_percent
+          - kafka_server_kafkaserver_brokerstate
+          - kafka_server_kafkaserver_linux_disk_read_bytes
+          - kafka_server_kafkaserver_linux_disk_write_bytes
+          - kafka_server_replicamanager_leadercount
+          - kafka_server_replicamanager_partitioncount
+          - kafka_server_replicamanager_underreplicatedpartitions
+          - kafka_server_socket_server_metrics_connection_count
+          - kafka_topic_partition_current_offset
+          - kafka_topic_partitions
+          - prometheus_local_storage_target_heap_size_bytes
+          - prometheus_target_sync_length_seconds_sum
+          - sidecar_injection_failure_total
+          - strimzi_resources
+          - up
+          - volume_manager_total_volumes
+          - workqueue_depth
+  k8sattributes:
+    auth_type: "serviceAccount"
+    passthrough: false
+    filter:
+      node_from_env_var: ${env:NODE_NAME}
+    extract:
+      metadata:
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.cluster.name
+        - k8s.namespace.name
+        - k8s.node.name
+        - k8s.pod.start_time
+    pod_association:
+      - from: resource_attribute
+        name: k8s.pod.ip
+      - from: resource_attribute
+        name: k8s.pod.uid
   memory_limiter:
     limit_percentage: 85
     check_interval: 1s
@@ -170,30 +441,113 @@ processors:
         value: Observability-v1.0.0-0c1d3
         action: insert
 exporters:
+  elasticsearch/event:
+    endpoints:
+    - http://elasticsearch-master.observability-server.svc.cluster.local:9200
+    index: event-data
+    tls:
+      insecure: true
+  elasticsearch/logs:
+    endpoints:
+    - http://elasticsearch-master.observability-server.svc.cluster.local:9200
+    index: pod-logs
+    tls:
+      insecure: true
+  elasticsearch/observability-server:
+    endpoints:
+    - http://elasticsearch-master.observability-server.svc.cluster.local:9200
+    index: observability-server
+    tls:
+      insecure: true
+  httpcloudeventmsg:
+    ce:
+      append_type: com.hv.cloudevent.k8sevents
+      source: dev-chandrila
+    endpoint: http://cloudeventssource-default.ns-bhushan2.knative.perf01-notification.hitachi-lumada.io
+    filter: "*"
+    tls:
+      insecure: true
+  kafka/event:
+    protocol_version: 2.0.0
+    brokers: [my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092]
+    topic: test-topic
+    encoding: raw
+  kafka/podlog:
+    protocol_version: 2.0.0
+    brokers: [my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092]
+    topic: observability.saas.pod.logs
+    encoding: otlp_proto
+    retry_on_failure:
+      max_elapsed_time: 45
+    sending_queue:
+      num_consumers: 2
+      queue_size: 8000
+    producer:
+    #  max_message_bytes: 67108864
+      flush_max_messages: 500
+  kafka/metrics:
+    protocol_version: 2.0.0
+    brokers: [my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092]
+    topic: observability.saas.metrics
+    encoding: otlp_proto
+    retry_on_failure:
+      max_elapsed_time: 45
+    sending_queue:
+      num_consumers: 2
+      queue_size: 1000
+    producer:
+      max_message_bytes: 67108864
+      flush_max_messages: 500
+      compression: lz4
+  kafka/traces:
+    protocol_version: 2.0.0
+    brokers: [my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092]
+    topic: observability.saas.traces
+    encoding: otlp_proto
+  loadbalancing:
+    routing_key: "service"
+    protocol:
+      otlp:
+        timeout: 1s
+    resolver:
+      static:
+        hostnames:
+        - otel-collector-daemonset.observability-client.svc.cluster.local:4317
+  logging:
+    verbosity: detailed
   loki/event:
-    endpoint: http://localhost:3100/loki/api/v1/push
+    endpoint: http://loki.prometheus.svc.cluster.local:3100/loki/api/v1/push
     sending_queue:
       storage: file_storage
     tls:
       insecure: true
   loki/logs:
-    endpoint: http://localhost:3100/loki/api/v1/push
+    endpoint: http://loki.prometheus.svc.cluster.local:3100/loki/api/v1/push
     sending_queue:
       storage: file_storage
     tls:
       insecure: true
+  openobservelog:
+    endpoint: https://open-observe.obsqa.hitachi-lumada.io
+    log_options:
+      user_name: admin@hv.com
+      token: s5C7CsWOZJVf0Zff
+      stream: default
+      org: default
+    tls:
+      insecure: true
   prometheusremotewrite:
-    endpoint: http://localhost:9201/write
+    endpoint: http://promscale.observability-server.svc.cluster.local:9201/write
     tls:
       insecure: true
   otlp/promscale:
-    endpoint: http://localhost:9202
+    endpoint: http://promscale.observability-server.svc.cluster.local:9202
     tls:
       insecure: true
     sending_queue:
       storage: file_storage
   otlp/tempo:
-    endpoint: http://localhost:4317
+    endpoint: http://loki-tempo.prometheus.svc.cluster.local:4317
     tls:
       insecure: true
     sending_queue:
@@ -204,23 +558,24 @@ extensions:
     timeout: 10s
     compaction:
       on_rebound: true
-      directory: ./otel/compaction
+      directory: ./otel/tmp/
       max_transaction_size: 32_768
       rebound_needed_threshold_mib: 128
       rebound_trigger_threshold_mib: 128
   health_check:
-    endpoint: ":13133"
+    endpoint: "localhost:13133"
   oauth2client:
     client_id: opentelemetry
     client_secret: tLTiUouOfBBuYEwZhQ8Nlzg72L5S0nIZ
     endpoint_params:
       grant_type: client_credentials
     token_url: http://common-auth.keycloak.dev-vkcsaf.hitachi-lumada.io/realms/opentelemetry/protocol/openid-connect/token
+  pprof:
 service:
   telemetry:
     logs:
       level: warn
     metrics:
-      address: 0.0.0.0:8888
+      address: localhost:8888
   extensions: []
   pipelines:

@@ -21,6 +21,11 @@ func ExtractToLocation(srcLoc string, destLoc string) bool {
 	splitSrc := strings.Split(srcLoc, ".")
 	fileExtension := splitSrc[len(splitSrc)-1]
 
+	if len(splitSrc) == 1 || len(fileExtension) > 4 {
+		fmt.Fprintf(os.Stdin, "%s not an archive/supported archive, skipping extraction process\n", srcLoc)
+		return true
+	}
+
 	switch fileExtension {
 	case ARCHIVE_GZ:
 		isSuccessful = extractGZToLocation(srcLoc, destLoc)
