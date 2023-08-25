@@ -34,6 +34,9 @@ func ListOtelOptions() {
 
 	fmt.Fprintf(os.Stdin, "Supported entries:\n")
 	for ke, ve := range otelData {
+		if ke == OTEL_SERVICE {
+			continue
+		}
 		fmt.Fprintf(os.Stdin, "  %s\n", ke)
 		for kee := range ve.(map[string]interface{}) {
 			fmt.Fprintf(os.Stdin, "    %v\n", kee)

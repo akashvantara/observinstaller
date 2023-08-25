@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -52,6 +53,10 @@ const (
 	OS_MAC = "darwin"
 
 	SHORT_HELP = "h"
+)
+
+var (
+	OS_TYPE = runtime.GOOS
 )
 
 type FileConfig struct {
