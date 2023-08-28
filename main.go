@@ -61,60 +61,51 @@ func main() {
 		return
 	}
 
-	var configureDownload bool = false
-	var configureRun bool = false
-	var configureKill bool = false
-	var configureRemove bool = false
-	var configureOtel bool = false
-
 	switch os.Args[1] {
 	case conf.COMMAND_DOWNLOAD:
-		configureDownload = true
+		downloadOptions := flags.ConfigureDownloadFlagSet(true, downloadFlagSet)
+		if downloadOptions != nil {
+			if ops.DownloadAndInstall(&fileConfig, downloadOptions) {
+				fmt.Fprintf(os.Stdin, "Download and installation process completed!\n")
+			} else {
+				fmt.Fprintf(os.Stderr, "Download and installation process failed!\n")
+			}
+		}
 	case conf.COMMAND_RUN:
-		configureRun = true
+		runOptions := flags.ConfigureRunFlagSet(true, runFlagSet)
+		if runOptions != nil {
+			if ops.RunApplication(&fileConfig, runOptions, &lastRunConfig) {
+				fmt.Fprintf(os.Stdin, "Running application/s process completed!\n")
+			}
+		}
 	case conf.COMMAND_KILL:
-		configureKill = true
+		killOptions := flags.ConfigureKillFlagSet(true, killFlagSet)
+		if killOptions != nil {
+			if ops.KillApplication(&fileConfig, killOptions, &lastRunConfig) {
+				fmt.Fprintf(os.Stdin, "Killing application/s process completed!\n")
+			}
+		}
 	case conf.COMMAND_REMOVE:
-		configureRemove = true
+		removeOptions := flags.ConfigureRemoveFlagSet(true, removeFlagSet)
+		if removeOptions != nil {
+			if ops.RemoveDirs(&fileConfig, removeOptions) {
+				fmt.Fprintf(os.Stdin, "Removing directories completed!\n")
+			}
+		}
 	case conf.COMMAND_OTEL:
-		configureOtel = true
+		otelOptions := flags.ConfigureOtelFlagSet(true, otelFlagSet)
+		if otelOptions != nil {
+			if otelOptions.List {
+				ops.ListOtelOptions()
+			} else if otelOptions.Build {
+				if !ops.PrepareOtelCfgFile(&fileConfig, otelOptions.FileName) {
+					fmt.Fprintf(os.Stderr, "Failed to write/prepare config\n")
+				}
+			}
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command\n")
 		conf.PrintMainUsage()
-	}
-
-	downloadOptions := flags.ConfigureDownloadFlagSet(configureDownload, downloadFlagSet)
-	runOptions := flags.ConfigureRunFlagSet(configureRun, runFlagSet)
-	killOptions := flags.ConfigureKillFlagSet(configureKill, killFlagSet)
-	removeOptions := flags.ConfigureRemoveFlagSet(configureRemove, removeFlagSet)
-	otelOptions := flags.ConfigureOtelFlagSet(configureOtel, otelFlagSet)
-
-	if downloadOptions != nil {
-		if ops.DownloadAndInstall(&fileConfig, downloadOptions) {
-			fmt.Fprintf(os.Stdin, "Download and installation process completed!\n")
-		} else {
-			fmt.Fprintf(os.Stderr, "Download and installation process failed!\n")
-		}
-	} else if runOptions != nil {
-		if ops.RunApplication(&fileConfig, runOptions, &lastRunConfig) {
-			fmt.Fprintf(os.Stdin, "Running application/s process completed!\n")
-		}
-	} else if killOptions != nil {
-		if ops.KillApplication(&fileConfig, killOptions, &lastRunConfig) {
-			fmt.Fprintf(os.Stdin, "Killing application/s process completed!\n")
-		}
-	} else if removeOptions != nil {
-		if ops.RemoveDirs(&fileConfig, removeOptions) {
-			fmt.Fprintf(os.Stdin, "Removing directories completed!\n")
-		}
-	} else if otelOptions != nil {
-		if otelOptions.List {
-			ops.ListOtelOptions()
-		} else if otelOptions.Build {
-			if !ops.PrepareOtelCfgFile(&fileConfig, otelOptions.FileName) {
-				fmt.Fprintf(os.Stderr, "Failed to write/prepare config\n")
-			}
-		}
 	}
 
 	// Modify the last run config for house-keeping
