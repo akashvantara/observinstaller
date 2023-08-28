@@ -10,6 +10,23 @@ import (
 	"github.com/hv/akash.chandra/observinstaller/conf"
 )
 
+// Only to be used for displaying the completion
+type ProgressData struct {
+	Numerator   uint64
+	Denominator uint64
+}
+
+func (pd *ProgressData) Write(p []byte) (int, error) {
+	readBytes := len(p)
+	pd.Numerator += uint64(readBytes)
+	fmt.Fprintf(os.Stdin, "\rDownloaded %d/%d MB data (%.2f%%)",
+		pd.Numerator/1024/1024,
+		pd.Denominator/1024/1024,
+		(float32(pd.Numerator)/float32(pd.Denominator))*100.0,
+	)
+	return readBytes, nil
+}
+
 func DownloadAndInstall(fileConfig *conf.FileConfig, downloadOptions *conf.DownloadOptions) bool {
 	os.MkdirAll(fileConfig.DownloadDirectory, os.ModePerm.Perm())
 	os.MkdirAll(fileConfig.InstallationDirectory, os.ModePerm.Perm())
@@ -99,7 +116,6 @@ func RemoveDirs(fileConfig *conf.FileConfig, removeOptions *conf.RemoveOptions) 
 }
 
 func downloadFile(url string, destLocation string) bool {
-
 	file, err := os.Create(destLocation)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Couldn't create file: %s, err: %v\n", destLocation, err)
@@ -113,11 +129,12 @@ func downloadFile(url string, destLocation string) bool {
 	}
 	defer res.Body.Close()
 
-	b, err := io.Copy(file, res.Body)
+	downloadProgress := &ProgressData{Denominator: uint64(res.ContentLength)}
+	b, err := io.Copy(file, io.TeeReader(res.Body, downloadProgress))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't write file from URL: %s, err: %v\n", url, err)
+		fmt.Fprintf(os.Stderr, "\nCouldn't write file from URL: %s, err: %v\n", url, err)
 	} else {
-		fmt.Fprintf(os.Stdin, "Wrote %fMB data into %s\n", (float64(b) / 1024.0 / 1024.0), destLocation)
+		fmt.Fprintf(os.Stdin, "\nWrote %.3fMB data into %s\n", (float64(b) / 1024.0 / 1024.0), destLocation)
 	}
 
 	return true
