@@ -106,7 +106,7 @@ packages:
   - name: Openobserve
     url: 
       windows: https://github.com/openobserve/openobserve/releases/download/v0.5.2/openobserve-v0.5.2-windows-amd64.zip
-      linux: https://github.com/openobserve/openobserve/releases/download/v0.5.2/openobserve-v0.5.2-linux-amd64.tar.gz
+      linux: https://github.com/openobserve/openobserve/releases/download/v0.5.2/openobserve-v0.5.2-linux-amd64-musl.tar.gz
       mac: https://github.com/openobserve/openobserve/releases/download/v0.5.2/openobserve-v0.5.2-darwin-amd64.tar.gz
     run:
       command: 

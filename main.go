@@ -53,9 +53,10 @@ func main() {
 	otelFlagSet := flag.NewFlagSet(conf.COMMAND_OTEL, flag.ContinueOnError)
 
 	helpShortFlag := flag.Bool("h", false, "Help for the program")
+	helpFullFlag := flag.Bool("help", false, "Help for the program")
 	flag.Parse()
 
-	if len(os.Args) < 2 || *helpShortFlag {
+	if len(os.Args) < 2 || *helpShortFlag || *helpFullFlag {
 		conf.PrintMainUsage()
 		return
 	}

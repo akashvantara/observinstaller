@@ -29,20 +29,20 @@ func DownloadAndInstall(fileConfig *conf.FileConfig, downloadOptions *conf.Downl
 				if *url == "" {
 					fmt.Fprintf(os.Stdin, "Ignoring downloading for %s\n", pkg.Name)
 					continue
+				} else {
+					fmt.Fprintf(os.Stdin, "Downloading %s\n", pkg.Name)
 				}
 
 				// Download
 				fileName := path.Base(*url)
 				destLoc := fileConfig.DownloadDirectory + string(os.PathSeparator) + fileName
 				installDir := fileConfig.InstallationDirectory + string(os.PathSeparator) + conf.NormalizeName(pkg.Name)
-
 				if err := os.MkdirAll(installDir, os.ModePerm.Perm()); err != nil {
 					fmt.Fprintf(os.Stderr, "Error while creating installation folder for %s, err: %v\n", pkg.Name, err)
 					return false
 				}
 
 				_, err := os.Stat(destLoc)
-
 				if err != nil {
 					// Download the file as it's not present
 					if downloadFile(*url, destLoc) {
@@ -99,32 +99,26 @@ func RemoveDirs(fileConfig *conf.FileConfig, removeOptions *conf.RemoveOptions) 
 }
 
 func downloadFile(url string, destLocation string) bool {
-	fileDownloaded := false
 
 	file, err := os.Create(destLocation)
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Couldn't create file: %s, err: %v\n", destLocation, err)
 		return false
 	}
-
 	defer file.Close()
 
 	res, err := http.Get(url)
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Couldn't get file from URL: %s, err: %v\n", url, err)
 	}
-
 	defer res.Body.Close()
 
 	b, err := io.Copy(file, res.Body)
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Couldn't write file from URL: %s, err: %v\n", url, err)
 	} else {
 		fmt.Fprintf(os.Stdin, "Wrote %fMB data into %s\n", (float64(b) / 1024.0 / 1024.0), destLocation)
 	}
 
-	return fileDownloaded
+	return true
 }
