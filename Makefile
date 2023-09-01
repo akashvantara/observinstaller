@@ -5,15 +5,8 @@ LD_FLAGS := -ldflags="-s -w"
 
 all: pc arm
 
-pc: linux_x64 windows_x64 mac_x64
-arm: linux_arm64 windows_arm64 mac_arm64
-
-linux_x64: observinstaller_linux_x64
-windows_x64: observinstaller_windows_x64
-mac_x64: observinstaller_mac_x64
-linux_arm64: observinstaller_linux_arm64
-windows_arm64: observinstaller_windows_arm64
-mac_arm64: observinstaller_mac_arm64
+pc: observinstaller_linux_x64 observinstaller_windows_x64 observinstaller_mac_x64
+arm: observinstaller_linux_arm64 observinstaller_windows_arm64 observinstaller_mac_arm64
 
 def: main.go
 	go build ${LD_FLAGS} -o observinstaller

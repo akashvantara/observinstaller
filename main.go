@@ -65,31 +65,29 @@ func main() {
 	case conf.COMMAND_DOWNLOAD:
 		downloadOptions := flags.ConfigureDownloadFlagSet(true, downloadFlagSet)
 		if downloadOptions != nil {
-			if ops.DownloadAndInstall(&fileConfig, downloadOptions) {
-				fmt.Fprintf(os.Stdin, "Download and installation process completed!\n")
-			} else {
+			if !ops.DownloadAndInstall(&fileConfig, downloadOptions) {
 				fmt.Fprintf(os.Stderr, "Download and installation process failed!\n")
 			}
 		}
 	case conf.COMMAND_RUN:
 		runOptions := flags.ConfigureRunFlagSet(true, runFlagSet)
 		if runOptions != nil {
-			if ops.RunApplication(&fileConfig, runOptions, &lastRunConfig) {
-				fmt.Fprintf(os.Stdin, "Running application/s process completed!\n")
+			if !ops.RunApplication(&fileConfig, runOptions, &lastRunConfig) {
+				fmt.Fprintf(os.Stderr, "Running application/s process falied!\n")
 			}
 		}
 	case conf.COMMAND_KILL:
 		killOptions := flags.ConfigureKillFlagSet(true, killFlagSet)
 		if killOptions != nil {
-			if ops.KillApplication(&fileConfig, killOptions, &lastRunConfig) {
-				fmt.Fprintf(os.Stdin, "Killing application/s process completed!\n")
+			if !ops.KillApplication(&fileConfig, killOptions, &lastRunConfig) {
+				fmt.Fprintf(os.Stderr, "Killing application/s process failed!\n")
 			}
 		}
 	case conf.COMMAND_REMOVE:
 		removeOptions := flags.ConfigureRemoveFlagSet(true, removeFlagSet)
 		if removeOptions != nil {
-			if ops.RemoveDirs(&fileConfig, removeOptions) {
-				fmt.Fprintf(os.Stdin, "Removing directories completed!\n")
+			if !ops.RemoveDirs(&fileConfig, removeOptions) {
+				fmt.Fprintf(os.Stderr, "Removing directories failed!\n")
 			}
 		}
 	case conf.COMMAND_OTEL:
