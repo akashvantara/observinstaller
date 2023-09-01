@@ -60,6 +60,7 @@ func ConfigureRunFlagSet(configure bool, flag *flag.FlagSet) *conf.RunOptions {
 
 	minimalFlag := flag.Bool(conf.INSTALLATION_TYPE_MINIMAL, false, "run the minimum set-up for observability, if present")
 	fullFlag := flag.Bool(conf.INSTALLATION_TYPE_FULL, false, "run the full set-up for observability, if present")
+	listFlag := flag.Bool(conf.RUN_LIST_PROCESS, false, "list the running process that were run recently")
 	localHelpShortFlag := flag.Bool(conf.SHORT_HELP, false, "run help text")
 	totalActivatedOptions := 0
 
@@ -78,6 +79,13 @@ func ConfigureRunFlagSet(configure bool, flag *flag.FlagSet) *conf.RunOptions {
 		totalActivatedOptions += 1
 		runOptions = &conf.RunOptions{
 			RunType: conf.INSTALLATION_TYPE_FULL,
+		}
+	}
+
+	if *listFlag {
+		totalActivatedOptions += 1
+		runOptions = &conf.RunOptions{
+			RunType: conf.RUN_LIST_PROCESS,
 		}
 	}
 

@@ -41,6 +41,8 @@ const (
 	REMOVE_TYPE_DOWNLOAD = "d"
 	REMOVE_TYPE_INSTALL  = "i"
 	REMOVE_TYPE_ALL      = "a"
+	
+	RUN_LIST_PROCESS = "l"
 
 	KILL_ALL         = "a"
 	KILL_RESTART_ALL = "r"

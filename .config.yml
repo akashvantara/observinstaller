@@ -2,9 +2,7 @@ downloadDirectory: downloads
 installationDirectory: installs
 baseOtelConfig: 
   extensions:
-    - file_storage
     - health_check
-    - oauth2client
   pipelines:
     logs:
       receivers:
@@ -117,7 +115,7 @@ packages:
       envVariables: ["ZO_ROOT_USER_EMAIL=akash.chandra@hv.com", "ZO_ROOT_USER_PASSWORD=test"]
     installModeSupport:
       - minimal
-  - name: Test2
+  - name: Cat
     url: 
       windows: ""
       linux: "" 
@@ -125,9 +123,9 @@ packages:
     run:
       command: 
         windows: "ls installs/*"
-        linux: "nc"
+        linux: "echo"
         mac: "ls"
-      args: ["-l", "-p", "3000"]
+      args: ["Hello", "World"]
       envVariables: []
     installModeSupport:
       - minimal

@@ -9,6 +9,12 @@ import (
 
 func RunApplication(fileConfig *conf.FileConfig, runOptions *conf.RunOptions, lastRunConfig *conf.LastRunConfig) bool {
 	// Don't fail in this branch as it writes the stuff to the last run file
+
+	if runOptions.RunType == conf.RUN_LIST_PROCESS {
+		return listRanApplications(lastRunConfig)
+	}
+
+	// Process for loop if the type matches with -minimal or -full or similar
 	for _, pkg := range fileConfig.Pkg {
 		for _, runType := range pkg.InstallModeSupport {
 			if runType == runOptions.RunType {
@@ -68,6 +74,19 @@ func RunApplication(fileConfig *conf.FileConfig, runOptions *conf.RunOptions, la
 		}
 	}
 
+	return true
+}
+
+func listRanApplications(lastRunConfig *conf.LastRunConfig) bool {
+	if len(lastRunConfig.RunningApps) == 0 {
+		fmt.Fprintf(os.Stdin, "No applications were found to run in history\n")
+		return true
+	}
+
+	fmt.Fprintf(os.Stdin, "Running applications:\n")
+	for _, app := range lastRunConfig.RunningApps {
+		fmt.Fprintf(os.Stdin, "  * %s on PID: %d\n", app.Name, app.PID)
+	}
 	return true
 }
 
