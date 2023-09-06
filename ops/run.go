@@ -60,8 +60,8 @@ func RunApplication(fileConfig *conf.FileConfig, runOptions *conf.RunOptions, la
 						string(os.PathSeparator) +
 						*runCommand
 				}
-				cmd, err := conf.StartProgram(false, 0, command, runArgs, runEnvVars)
 
+				cmd, err := conf.StartProgram(false, 0, command, runArgs, runEnvVars)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v, please run download command first if %s is not installed\n",
 						*runCommand, err, pkg.Name,
@@ -99,8 +99,8 @@ func KillApplication(fileConfig *conf.FileConfig, killOptions *conf.KillOptions,
 	switch conf.OS_TYPE {
 	case conf.OS_WIN:
 		killCommand = "taskkill"
-		killArgs = make([]string, 2)
-		killArgs[argIdx] = "/p" // Windows need /p as PID identifier in option
+		killArgs = make([]string, 4)
+		killArgs[argIdx] = "/PID"
 		argIdx += 1
 	case conf.OS_LIN:
 		fallthrough
@@ -115,7 +115,9 @@ func KillApplication(fileConfig *conf.FileConfig, killOptions *conf.KillOptions,
 		for _, pkg := range fileConfig.Pkg {
 			for currentRunningAppIdx, runningApp := range lastRunConfig.RunningApps {
 				if runningApp.Name == pkg.Name {
-					killArgs[argIdx] = strconv.Itoa(runningApp.PID)
+					killArgs[1] = strconv.Itoa(runningApp.PID)
+					killArgs[2] = "/F"
+					killArgs[3] = "/T"
 					_, err := conf.StartProgram(true, 0, killCommand, killArgs, killEnvVars)
 
 					if err != nil {

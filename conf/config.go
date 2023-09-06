@@ -41,7 +41,7 @@ const (
 	REMOVE_TYPE_DOWNLOAD = "d"
 	REMOVE_TYPE_INSTALL  = "i"
 	REMOVE_TYPE_ALL      = "a"
-	
+
 	RUN_LIST_PROCESS = "l"
 
 	KILL_ALL         = "a"
@@ -117,19 +117,24 @@ func PrintMainUsage() {
 }
 
 func StartProgram(waitForCompletion bool, waitPeriodBeforeRun int64, command string, args []string, envVars []string) (*exec.Cmd, error) {
-	var cmd *exec.Cmd
+	fullPath, err := exec.LookPath(command)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error occured while looking for executable path: %v", err)
+		return nil, err
+	}
 
+	var cmd *exec.Cmd
 	if args == nil || len(args) == 0 {
-		cmd = exec.Command(command)
+		cmd = exec.Command(fullPath)
 	} else {
-		cmd = exec.Command(command, args...)
+		cmd = exec.Command(fullPath, args...)
 	}
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = append(cmd.Env, os.ExpandEnv("$PATH"))
-	if envVars == nil || len(envVars) == 0 {
+
+	if envVars != nil && len(envVars) > 0 {
 		cmd.Env = append(cmd.Env, envVars...)
 	}
 
@@ -137,7 +142,6 @@ func StartProgram(waitForCompletion bool, waitPeriodBeforeRun int64, command str
 		time.Sleep(time.Duration(waitPeriodBeforeRun) * time.Second)
 	}
 
-	var err error
 	if waitForCompletion {
 		err = cmd.Run()
 	} else {

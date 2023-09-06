@@ -12,22 +12,22 @@ def: main.go
 	go build ${LD_FLAGS} -o observinstaller
 
 observinstaller_linux_x64: main.go
-	GOOS=linux GOARCH=${ARCH_PC} go build ${LD_FLAGS} -o $@
+	CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH_PC} go build ${LD_FLAGS} -o $@
 
 observinstaller_windows_x64: main.go
-	GOOS=windows GOARCH=${ARCH_PC} go build ${LD_FLAGS} -o $@
+	CGO_ENABLED=0 GOOS=windows GOARCH=${ARCH_PC} go build ${LD_FLAGS} -o $@
 
 observinstaller_mac_x64: main.go
-	GOOS=darwin GOARCH=${ARCH_PC} go build ${LD_FLAGS} -o $@
+	CGO_ENABLED=0 GOOS=darwin GOARCH=${ARCH_PC} go build ${LD_FLAGS} -o $@
 
 observinstaller_linux_arm64: main.go
-	GOOS=linux GOARCH=${ARCH_ARM} go build ${LD_FLAGS} -o $@
+	CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH_ARM} go build ${LD_FLAGS} -o $@
 
 observinstaller_windows_arm64: main.go
-	GOOS=windows GOARCH=${ARCH_ARM} go build ${LD_FLAGS} -o $@
+	CGO_ENABLED=0 GOOS=windows GOARCH=${ARCH_ARM} go build ${LD_FLAGS} -o $@
 
 observinstaller_mac_arm64: main.go
-	GOOS=darwin GOARCH=${ARCH_ARM} go build ${LD_FLAGS} -o $@
+	CGO_ENABLED=0 GOOS=darwin GOARCH=${ARCH_ARM} go build ${LD_FLAGS} -o $@
 
 clean: 
 	rm observinstaller*

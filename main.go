@@ -11,10 +11,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	OBSERV_INST = ".observinst"
+	CONFIG = ".config.yml"
+)
+
 func main() {
-	confFile, err := os.ReadFile(".config.yml")
+	confFile, err := os.ReadFile(CONFIG)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't open .config.yml file, please check if file is present there\nerr: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Couldn't open %s file, please check if file is present there\nerr: %v\n", CONFIG, err)
 		return
 	}
 
@@ -22,25 +27,25 @@ func main() {
 	err = yaml.Unmarshal(confFile, &fileConfig)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't unmarshal .config.yml to config, err: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Couldn't unmarshal %s to config, err: %v\n", CONFIG, err)
 		return
 	}
 
-	lastRunFile, err := os.ReadFile(".observinst")
+	lastRunFile, err := os.ReadFile(OBSERV_INST)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't open .observinst file, err: %v, creating file\n", err)
+		fmt.Fprintf(os.Stderr, "Couldn't open %s file, err: %v, creating file\n", OBSERV_INST, err)
 	}
 	lastRunConfig := conf.LastRunConfig{}
 	err = yaml.Unmarshal(lastRunFile, &lastRunConfig)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't unmarshal .observinst to config, err: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Couldn't unmarshal %s to config, err: %v\n", OBSERV_INST, err)
 		return
 	}
 
 	lastRunWFile, err := os.OpenFile(".observinst", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't open .observinst file, err: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Couldn't open %s file, err: %v\n", OBSERV_INST, err)
 		return
 	}
 	defer lastRunWFile.Close()
