@@ -58,7 +58,10 @@ const (
 )
 
 var (
-	OS_TYPE = runtime.GOOS
+	OS_TYPE   = runtime.GOOS
+	OS_STDIN  = os.Stdin
+	OS_STDERR = os.Stderr
+	OS_STDOUT = os.Stdout
 )
 
 type FileConfig struct {
@@ -111,15 +114,15 @@ type BaseOtelConfig struct {
 
 // Functions
 func PrintMainUsage() {
-	fmt.Fprintf(os.Stderr, "USAGE: %s <command> <options>\n", PROG_NAME)
-	fmt.Fprintf(os.Stderr, "  Supported commands:\n    %s\n    %s\n    %s\n    %s\n    %s\n",
+	fmt.Fprintf(OS_STDERR, "USAGE: %s <command> <options>\n", PROG_NAME)
+	fmt.Fprintf(OS_STDERR, "  Supported commands:\n    %s\n    %s\n    %s\n    %s\n    %s\n",
 		COMMAND_DOWNLOAD, COMMAND_RUN, COMMAND_KILL, COMMAND_REMOVE, COMMAND_OTEL)
 }
 
 func StartProgram(waitForCompletion bool, waitPeriodBeforeRun int64, command string, args []string, envVars []string) (*exec.Cmd, error) {
 	fullPath, err := exec.LookPath(command)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error occured while looking for executable path: %v", err)
+		fmt.Fprintf(OS_STDERR, "Error occured while looking for executable path: %v", err)
 		return nil, err
 	}
 
@@ -130,9 +133,9 @@ func StartProgram(waitForCompletion bool, waitPeriodBeforeRun int64, command str
 		cmd = exec.Command(fullPath, args...)
 	}
 
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdin = OS_STDIN
+	cmd.Stdout = OS_STDOUT
+	cmd.Stderr = OS_STDERR
 
 	if envVars != nil && len(envVars) > 0 {
 		cmd.Env = append(cmd.Env, envVars...)

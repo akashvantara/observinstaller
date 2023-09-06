@@ -1,44 +1,39 @@
 downloadDirectory: downloads
 installationDirectory: installs
-baseOtelConfig: 
+baseOtelConfig:
   extensions:
     - health_check
   pipelines:
     logs:
       receivers:
-        - filelog
+        - otlp
       processors:
         - filter/body
-        - resource/logs
-      exporters: []
+      exporters:
+        - logging
     metrics:
       receivers:
-        - opencensus
         - otlp
-        - prometheus
       processors:
         - attributes/insert
       exporters:
-        - prometheusremotewrite
+        - logging
     traces:
       receivers:
         - otlp
-        - zipkin
       processors:
         - attributes/insert
-        - filter/body
       exporters:
-        - otlp/promscale
-        - otlp/tempo
+        - logging
 packages:
   - name: Grafana
-    url: 
+    url:
       windows: https://dl.grafana.com/oss/release/grafana-10.1.0.windows-amd64.zip
       linux: https://dl.grafana.com/oss/release/grafana-10.1.0.linux-amd64.tar.gz
       mac: https://dl.grafana.com/oss/release/grafana-10.1.0.darwin-amd64.tar.gz
-    run: 
+    run:
       command:
-        windows: "bin/grafana server"
+        windows: "bin/grafana.exe server"
         linux: "bin/grafana server"
         mac: "bin/grafana server"
       args: []
@@ -46,12 +41,12 @@ packages:
     installModeSupport:
       - full
   - name: Loki
-    url: 
+    url:
       windows: https://github.com/grafana/loki/releases/download/v2.8.4/loki-windows-amd64.exe.zip
       linux: https://github.com/grafana/loki/releases/download/v2.8.4/loki-linux-arm64.zip
       mac: https://github.com/grafana/loki/releases/download/v2.8.4/loki-darwin-arm64.zip
     run:
-      command: 
+      command:
         windows: "loki-windows-amd64"
         linux: "loki-linux-amd64"
         mac: "loki-darwin-amd64"
@@ -62,31 +57,32 @@ packages:
     pkgOtelConfig:
       type: exporters
       pipeline: logs
-      config: > 
+      config: >
         loki/logs:
           endpoint: http://localhost:3100/loki/api/v1/push
   - name: Otel Collector
-    url: 
-      windows: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.83.0/otelcol_0.83.0_windows_amd64.tar.gz
+    url:
+      windows: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.83.0/otelcol-contrib_0.83.0_windows_amd64.tar.gz
       linux: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.83.0/otelcol-contrib_0.83.0_linux_386.tar.gz
-      mac: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.83.0/otelcol_0.83.0_darwin_amd64.tar.gz
+      mac: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.83.0/otelcol-contrib_0.83.0_darwin_amd64.tar.gz
     run:
-      command: 
-        windows: "otelcol-contrib"
+      command:
+        windows: "otelcol-contrib.exe"
         linux: "otelcol-contrib"
         mac: "otelcol-contrib"
-      args: ["--config otel-config.yaml > logs/otel.log 2> logs/otel_err.log"]
+      args: ["--config", "otel-config.yaml"]
       envVariables: []
     installModeSupport:
       - full
+      - minimal
   - name: Promscale
-    url: 
-      #windows: https://github.com/timescale/promscale/releases/download/0.17.0/promscale_0.17.0_Linux_x86_64 
+    url:
+      windows: https://github.com/timescale/promscale/releases/download/0.17.0/promscale_0.17.0_Linux_x86_64
       linux: https://github.com/timescale/promscale/releases/download/0.17.0/promscale_0.17.0_Linux_x86_64
       mac: https://github.com/timescale/promscale/releases/download/0.17.0/promscale_0.17.0_Darwin_x86_64
     run:
-      command: 
-        #windows: "loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
+      command:
+        windows: "loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
         linux: "loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
         mac: "loki-linux-amd64 -config.file loki-local-config.yaml > logs/loki.log 2> logs/loki_err.log &"
       args: []
@@ -102,30 +98,16 @@ packages:
           tls:
             insecure: true
   - name: Openobserve
-    url: 
+    url:
       windows: https://github.com/openobserve/openobserve/releases/download/v0.5.2/openobserve-v0.5.2-windows-amd64.zip
       linux: https://github.com/openobserve/openobserve/releases/download/v0.5.2/openobserve-v0.5.2-linux-amd64-musl.tar.gz
       mac: https://github.com/openobserve/openobserve/releases/download/v0.5.2/openobserve-v0.5.2-darwin-amd64.tar.gz
     run:
-      command: 
-        windows: "openobserve"
+      command:
+        windows: "openobserve.exe"
         linux: "openobserve"
         mac: "openobserve"
       args: []
-      envVariables: ["ZO_ROOT_USER_EMAIL=akash.chandra@hv.com", "ZO_ROOT_USER_PASSWORD=test"]
-    installModeSupport:
-      - minimal
-  - name: Cat
-    url: 
-      windows: ""
-      linux: "" 
-      mac: ""
-    run:
-      command: 
-        windows: "ls installs/*"
-        linux: "echo"
-        mac: "ls"
-      args: ["Hello", "World"]
-      envVariables: []
+      envVariables: ["ZO_ROOT_USER_EMAIL=admin@hv.com", "ZO_ROOT_USER_PASSWORD=admin"]
     installModeSupport:
       - minimal

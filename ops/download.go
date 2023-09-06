@@ -19,7 +19,7 @@ type ProgressData struct {
 func (pd *ProgressData) Write(p []byte) (int, error) {
 	readBytes := len(p)
 	pd.Numerator += uint64(readBytes)
-	fmt.Fprintf(os.Stdin, "\rDownloaded %d/%d MB data (%.2f%%)",
+	fmt.Fprintf(conf.OS_STDIN, "\rDownloaded %d/%d MB data (%.2f%%)",
 		pd.Numerator/1024/1024,
 		pd.Denominator/1024/1024,
 		(float32(pd.Numerator)/float32(pd.Denominator))*100.0,
@@ -44,10 +44,10 @@ func DownloadAndInstall(fileConfig *conf.FileConfig, downloadOptions *conf.Downl
 				}
 
 				if *url == "" {
-					fmt.Fprintf(os.Stdin, "Ignoring downloading for %s\n", pkg.Name)
+					fmt.Fprintf(conf.OS_STDIN, "Ignoring downloading for %s\n", pkg.Name)
 					continue
 				} else {
-					fmt.Fprintf(os.Stdin, "Downloading %s\n", pkg.Name)
+					fmt.Fprintf(conf.OS_STDIN, "Downloading %s\n", pkg.Name)
 				}
 
 				// Download
@@ -55,7 +55,7 @@ func DownloadAndInstall(fileConfig *conf.FileConfig, downloadOptions *conf.Downl
 				destLoc := fileConfig.DownloadDirectory + string(os.PathSeparator) + fileName
 				installDir := fileConfig.InstallationDirectory + string(os.PathSeparator) + conf.NormalizeName(pkg.Name)
 				if err := os.MkdirAll(installDir, os.ModePerm.Perm()); err != nil {
-					fmt.Fprintf(os.Stderr, "Error while creating installation folder for %s, err: %v\n", pkg.Name, err)
+					fmt.Fprintf(conf.OS_STDERR, "Error while creating installation folder for %s, err: %v\n", pkg.Name, err)
 					return false
 				}
 
@@ -63,20 +63,20 @@ func DownloadAndInstall(fileConfig *conf.FileConfig, downloadOptions *conf.Downl
 				if err != nil {
 					// Download the file as it's not present
 					if downloadFile(*url, destLoc) {
-						fmt.Fprintf(os.Stdin, "%s successfully downloaded to dest: %s\n", fileName, destLoc)
+						fmt.Fprintf(conf.OS_STDIN, "%s successfully downloaded to dest: %s\n", fileName, destLoc)
 					} else {
-						fmt.Fprintf(os.Stderr, "File: %s downloading failed!\n", fileName)
+						fmt.Fprintf(conf.OS_STDERR, "File: %s downloading failed!\n", fileName)
 					}
 				} else {
 					// File already present
-					fmt.Fprintf(os.Stdin, "File: %s is already present at: %s\n", fileName, destLoc)
+					fmt.Fprintf(conf.OS_STDIN, "File: %s is already present at: %s\n", fileName, destLoc)
 				}
 
 				// Install
 				if ExtractToLocation(destLoc, installDir) {
-					fmt.Fprintf(os.Stdin, "%s successfully installed at location: %s\n", pkg.Name, installDir)
+					fmt.Fprintf(conf.OS_STDIN, "%s successfully installed at location: %s\n", pkg.Name, installDir)
 				} else {
-					fmt.Fprintf(os.Stderr, "failed to extract file %s at location %s\n", destLoc, installDir)
+					fmt.Fprintf(conf.OS_STDERR, "failed to extract file %s at location %s\n", destLoc, installDir)
 				}
 				break
 			}
@@ -92,22 +92,22 @@ func RemoveDirs(fileConfig *conf.FileConfig, removeOptions *conf.RemoveOptions) 
 
 	if conf.REMOVE_TYPE_DOWNLOAD == removeOptions.RemoveType || conf.REMOVE_TYPE_ALL == removeOptions.RemoveType {
 		if downloadDirErr != nil {
-			fmt.Fprintf(os.Stdin, "Download directory '%s' doesn't exist, nothing to delete\n", fileConfig.DownloadDirectory)
+			fmt.Fprintf(conf.OS_STDIN, "Download directory '%s' doesn't exist, nothing to delete\n", fileConfig.DownloadDirectory)
 		} else {
-			fmt.Fprintf(os.Stdin, "Removing directory '%s'\n", fileConfig.DownloadDirectory)
+			fmt.Fprintf(conf.OS_STDIN, "Removing directory '%s'\n", fileConfig.DownloadDirectory)
 			if err := os.RemoveAll(fileConfig.DownloadDirectory); err != nil {
-				fmt.Fprintf(os.Stderr, "Error while removing directoy '%s', err: %v\n", fileConfig.DownloadDirectory, err)
+				fmt.Fprintf(conf.OS_STDERR, "Error while removing directoy '%s', err: %v\n", fileConfig.DownloadDirectory, err)
 			}
 		}
 	}
 
 	if conf.REMOVE_TYPE_INSTALL == removeOptions.RemoveType || conf.REMOVE_TYPE_ALL == removeOptions.RemoveType {
 		if installationDirErr != nil {
-			fmt.Fprintf(os.Stdin, "Install directory '%s' doesn't exist, nothing to delete\n", fileConfig.InstallationDirectory)
+			fmt.Fprintf(conf.OS_STDIN, "Install directory '%s' doesn't exist, nothing to delete\n", fileConfig.InstallationDirectory)
 		} else {
-			fmt.Fprintf(os.Stdin, "Removing directory '%s'\n", fileConfig.InstallationDirectory)
+			fmt.Fprintf(conf.OS_STDIN, "Removing directory '%s'\n", fileConfig.InstallationDirectory)
 			if err := os.RemoveAll(fileConfig.InstallationDirectory); err != nil {
-				fmt.Fprintf(os.Stderr, "Error while removing directoy '%s', err: %v\n", fileConfig.InstallationDirectory, err)
+				fmt.Fprintf(conf.OS_STDERR, "Error while removing directoy '%s', err: %v\n", fileConfig.InstallationDirectory, err)
 			}
 		}
 	}
@@ -118,23 +118,23 @@ func RemoveDirs(fileConfig *conf.FileConfig, removeOptions *conf.RemoveOptions) 
 func downloadFile(url string, destLocation string) bool {
 	file, err := os.Create(destLocation)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't create file: %s, err: %v\n", destLocation, err)
+		fmt.Fprintf(conf.OS_STDERR, "Couldn't create file: %s, err: %v\n", destLocation, err)
 		return false
 	}
 	defer file.Close()
 
 	res, err := http.Get(url)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't get file from URL: %s, err: %v\n", url, err)
+		fmt.Fprintf(conf.OS_STDERR, "Couldn't get file from URL: %s, err: %v\n", url, err)
 	}
 	defer res.Body.Close()
 
 	downloadProgress := &ProgressData{Denominator: uint64(res.ContentLength)}
 	b, err := io.Copy(file, io.TeeReader(res.Body, downloadProgress))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "\nCouldn't write file from URL: %s, err: %v\n", url, err)
+		fmt.Fprintf(conf.OS_STDERR, "\nCouldn't write file from URL: %s, err: %v\n", url, err)
 	} else {
-		fmt.Fprintf(os.Stdin, "\nWrote %.3fMB data into %s\n", (float64(b) / 1024.0 / 1024.0), destLocation)
+		fmt.Fprintf(conf.OS_STDIN, "\nWrote %.3fMB data into %s\n", (float64(b) / 1024.0 / 1024.0), destLocation)
 	}
 
 	return true

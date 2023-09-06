@@ -17,9 +17,15 @@ const (
 )
 
 func main() {
+	// Setting up the right things for printing
+	if conf.OS_TYPE == conf.OS_WIN {
+		conf.OS_STDIN = os.Stderr
+		conf.OS_STDERR = os.Stderr
+	}
+
 	confFile, err := os.ReadFile(CONFIG)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't open %s file, please check if file is present there\nerr: %v\n", CONFIG, err)
+		fmt.Fprintf(conf.OS_STDERR, "Couldn't open %s file, please check if file is present there\nerr: %v\n", CONFIG, err)
 		return
 	}
 
@@ -27,25 +33,25 @@ func main() {
 	err = yaml.Unmarshal(confFile, &fileConfig)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't unmarshal %s to config, err: %v\n", CONFIG, err)
+		fmt.Fprintf(conf.OS_STDERR, "Couldn't unmarshal %s to config, err: %v\n", CONFIG, err)
 		return
 	}
 
 	lastRunFile, err := os.ReadFile(OBSERV_INST)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't open %s file, err: %v, creating file\n", OBSERV_INST, err)
+		fmt.Fprintf(conf.OS_STDERR, "Couldn't open %s file, err: %v, creating file\n", OBSERV_INST, err)
 	}
 	lastRunConfig := conf.LastRunConfig{}
 	err = yaml.Unmarshal(lastRunFile, &lastRunConfig)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't unmarshal %s to config, err: %v\n", OBSERV_INST, err)
+		fmt.Fprintf(conf.OS_STDERR, "Couldn't unmarshal %s to config, err: %v\n", OBSERV_INST, err)
 		return
 	}
 
 	lastRunWFile, err := os.OpenFile(".observinst", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't open %s file, err: %v\n", OBSERV_INST, err)
+		fmt.Fprintf(conf.OS_STDERR, "Couldn't open %s file, err: %v\n", OBSERV_INST, err)
 		return
 	}
 	defer lastRunWFile.Close()
@@ -71,28 +77,28 @@ func main() {
 		downloadOptions := flags.ConfigureDownloadFlagSet(true, downloadFlagSet)
 		if downloadOptions != nil {
 			if !ops.DownloadAndInstall(&fileConfig, downloadOptions) {
-				fmt.Fprintf(os.Stderr, "Download and installation process failed!\n")
+				fmt.Fprintf(conf.OS_STDERR, "Download and installation process failed!\n")
 			}
 		}
 	case conf.COMMAND_RUN:
 		runOptions := flags.ConfigureRunFlagSet(true, runFlagSet)
 		if runOptions != nil {
 			if !ops.RunApplication(&fileConfig, runOptions, &lastRunConfig) {
-				fmt.Fprintf(os.Stderr, "Running application/s process falied!\n")
+				fmt.Fprintf(conf.OS_STDERR, "Running application/s process falied!\n")
 			}
 		}
 	case conf.COMMAND_KILL:
 		killOptions := flags.ConfigureKillFlagSet(true, killFlagSet)
 		if killOptions != nil {
 			if !ops.KillApplication(&fileConfig, killOptions, &lastRunConfig) {
-				fmt.Fprintf(os.Stderr, "Killing application/s process failed!\n")
+				fmt.Fprintf(conf.OS_STDERR, "Killing application/s process failed!\n")
 			}
 		}
 	case conf.COMMAND_REMOVE:
 		removeOptions := flags.ConfigureRemoveFlagSet(true, removeFlagSet)
 		if removeOptions != nil {
 			if !ops.RemoveDirs(&fileConfig, removeOptions) {
-				fmt.Fprintf(os.Stderr, "Removing directories failed!\n")
+				fmt.Fprintf(conf.OS_STDERR, "Removing directories failed!\n")
 			}
 		}
 	case conf.COMMAND_OTEL:
@@ -102,12 +108,12 @@ func main() {
 				ops.ListOtelOptions()
 			} else if otelOptions.Build {
 				if !ops.PrepareOtelCfgFile(&fileConfig, otelOptions.FileName) {
-					fmt.Fprintf(os.Stderr, "Failed to write/prepare config\n")
+					fmt.Fprintf(conf.OS_STDERR, "Failed to write/prepare config\n")
 				}
 			}
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown command\n")
+		fmt.Fprintf(conf.OS_STDERR, "Unknown command\n")
 		conf.PrintMainUsage()
 	}
 
@@ -122,7 +128,7 @@ func main() {
 
 	lastRunConfBytes, err := yaml.Marshal(lastRunConfig)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to marshal config for saving, err: %v\n", err)
+		fmt.Fprintf(conf.OS_STDERR, "Failed to marshal config for saving, err: %v\n", err)
 		return
 	}
 	lastRunWFile.Write(lastRunConfBytes)

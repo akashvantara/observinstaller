@@ -29,17 +29,17 @@ func ListOtelOptions() {
 	unmarshalErr := yaml.Unmarshal(otelConfig, &otelData)
 
 	if unmarshalErr != nil {
-		fmt.Fprintf(os.Stderr, "Failed to unmarshal YAML, err: %v\n", unmarshalErr)
+		fmt.Fprintf(conf.OS_STDERR, "Failed to unmarshal YAML, err: %v\n", unmarshalErr)
 	}
 
-	fmt.Fprintf(os.Stdin, "Supported entries:\n")
+	fmt.Fprintf(conf.OS_STDIN, "Supported entries:\n")
 	for ke, ve := range otelData {
 		if ke == OTEL_SERVICE {
 			continue
 		}
-		fmt.Fprintf(os.Stdin, "  %s\n", ke)
+		fmt.Fprintf(conf.OS_STDIN, "  %s\n", ke)
 		for kee := range ve.(map[string]interface{}) {
-			fmt.Fprintf(os.Stdin, "    %v\n", kee)
+			fmt.Fprintf(conf.OS_STDIN, "    %v\n", kee)
 		}
 	}
 }
@@ -50,7 +50,7 @@ func PrepareOtelCfgFile(fileConfig *conf.FileConfig, writeLoc string) bool {
 
 	unmarshalErr := yaml.Unmarshal(otelConfig, &embeddedOtelData)
 	if unmarshalErr != nil {
-		fmt.Fprintf(os.Stderr, "Failed to unmarshal YAML, err: %v\n", unmarshalErr)
+		fmt.Fprintf(conf.OS_STDERR, "Failed to unmarshal YAML, err: %v\n", unmarshalErr)
 		return false
 	}
 
@@ -78,7 +78,7 @@ func PrepareOtelCfgFile(fileConfig *conf.FileConfig, writeLoc string) bool {
 			serviceExtensionBlock = append(serviceExtensionBlock, extension)
 			extensionsBlock[extension] = embeddedExtensionBlock[extension]
 		} else {
-			fmt.Fprintf(os.Stderr, "Failed to find %s extension in our config\n", extension)
+			fmt.Fprintf(conf.OS_STDERR, "Failed to find %s extension in our config\n", extension)
 		}
 	}
 	serviceBlock[OTEL_EXTENSIONS] = serviceExtensionBlock
@@ -94,7 +94,7 @@ func PrepareOtelCfgFile(fileConfig *conf.FileConfig, writeLoc string) bool {
 				receiversBlock[receiverName] = embeddedReceiversBlock[receiverName]
 				entryArr = append(entryArr, receiverName)
 			} else {
-				fmt.Fprintf(os.Stderr, "Failed to find %s receiver in our config\n", receiverName)
+				fmt.Fprintf(conf.OS_STDERR, "Failed to find %s receiver in our config\n", receiverName)
 			}
 		}
 		servicePipelineBlockEntry[OTEL_RECEIVERS] = entryArr
@@ -105,7 +105,7 @@ func PrepareOtelCfgFile(fileConfig *conf.FileConfig, writeLoc string) bool {
 				processorsBlock[processorName] = embeddedProcessorsBlock[processorName]
 				entryArr = append(entryArr, processorName)
 			} else {
-				fmt.Fprintf(os.Stderr, "Failed to find %s processor in our config\n", processorName)
+				fmt.Fprintf(conf.OS_STDERR, "Failed to find %s processor in our config\n", processorName)
 			}
 		}
 		servicePipelineBlockEntry[OTEL_PROCESSORS] = entryArr
@@ -116,7 +116,7 @@ func PrepareOtelCfgFile(fileConfig *conf.FileConfig, writeLoc string) bool {
 				exportersBlock[exporterName] = embeddedExportersBlock[exporterName]
 				entryArr = append(entryArr, exporterName)
 			} else {
-				fmt.Fprintf(os.Stderr, "Failed to find %s exporter in our config\n", exporterName)
+				fmt.Fprintf(conf.OS_STDERR, "Failed to find %s exporter in our config\n", exporterName)
 			}
 		}
 		servicePipelineBlockEntry[OTEL_EXPORTERS] = entryArr
@@ -128,7 +128,7 @@ func PrepareOtelCfgFile(fileConfig *conf.FileConfig, writeLoc string) bool {
 			servicePipelineBlockTypeEntry := servicePipelineBlockEntry[pkg.PkgOtelConfig.Type].([]string)
 			var unmarshalData map[string]interface{} = make(map[string]interface{})
 			if err := yaml.Unmarshal([]byte(pkg.PkgOtelConfig.Config), &unmarshalData); err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to parse the otel config inside %s\n", pkg.Name)
+				fmt.Fprintf(conf.OS_STDERR, "Failed to parse the otel config inside %s\n", pkg.Name)
 			}
 
 			genBlock := cfgMap[pkg.PkgOtelConfig.Type].(map[string]interface{})
@@ -153,25 +153,25 @@ func PrepareOtelCfgFile(fileConfig *conf.FileConfig, writeLoc string) bool {
 
 	configFile, err := os.OpenFile(writeLoc, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't open %s file, err: %v\n", writeLoc, err)
+		fmt.Fprintf(conf.OS_STDERR, "Couldn't open %s file, err: %v\n", writeLoc, err)
 		return false
 	}
 	defer configFile.Close()
 
 	configData, err := yaml.Marshal(cfgMap)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to marshal config to prepare file, err: %v\n", err)
+		fmt.Fprintf(conf.OS_STDERR, "Failed to marshal config to prepare file, err: %v\n", err)
 		configFile.Close()
 		return false
 	}
 
 	_, err = configFile.Write(configData)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to write to file, err: %v\n", err)
+		fmt.Fprintf(conf.OS_STDERR, "Failed to write to file, err: %v\n", err)
 		configFile.Close()
 		return false
 	}
 
-	fmt.Fprintf(os.Stdin, "Config written to file: %s\n", writeLoc)
+	fmt.Fprintf(conf.OS_STDIN, "Config written to file: %s\n", writeLoc)
 	return true
 }

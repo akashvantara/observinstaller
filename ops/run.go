@@ -37,7 +37,7 @@ func RunApplication(fileConfig *conf.FileConfig, runOptions *conf.RunOptions, la
 				var appAlreadyRunning bool = false
 				for _, alreadyRunningApp := range lastRunConfig.RunningApps {
 					if alreadyRunningApp.Name == pkg.Name {
-						fmt.Fprintf(os.Stdin, "%s seems to be already running, PID: %d\n",
+						fmt.Fprintf(conf.OS_STDIN, "%s seems to be already running, PID: %d\n",
 							alreadyRunningApp.Name, alreadyRunningApp.PID,
 						)
 						appAlreadyRunning = true
@@ -51,7 +51,7 @@ func RunApplication(fileConfig *conf.FileConfig, runOptions *conf.RunOptions, la
 
 				var command string
 				if url == nil || *url == "" {
-					fmt.Fprintf(os.Stdin, "URL isn't present, assuming the binary is present already at $PATH\n")
+					fmt.Fprintf(conf.OS_STDIN, "URL isn't present, assuming the binary is present already at $PATH\n")
 					command = *runCommand
 				} else {
 					command = fileConfig.InstallationDirectory +
@@ -63,11 +63,11 @@ func RunApplication(fileConfig *conf.FileConfig, runOptions *conf.RunOptions, la
 
 				cmd, err := conf.StartProgram(false, 0, command, runArgs, runEnvVars)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v, please run download command first if %s is not installed\n",
+					fmt.Fprintf(conf.OS_STDERR, "Error occured while executing '%s', err: %v, please run download command first if %s is not installed\n",
 						*runCommand, err, pkg.Name,
 					)
 				} else {
-					fmt.Fprintf(os.Stdin, "Executing '%s', args: %v, envs: %v, PID: %d\n", *runCommand, runArgs, runEnvVars, cmd.Process.Pid)
+					fmt.Fprintf(conf.OS_STDIN, "Executing '%s', args: %v, envs: %v, PID: %d\n", *runCommand, runArgs, runEnvVars, cmd.Process.Pid)
 					lastRunConfig.RunningApps = append(lastRunConfig.RunningApps, conf.ProcessPidPair{Name: pkg.Name, PID: cmd.Process.Pid})
 				}
 			}
@@ -79,13 +79,13 @@ func RunApplication(fileConfig *conf.FileConfig, runOptions *conf.RunOptions, la
 
 func listRanApplications(lastRunConfig *conf.LastRunConfig) bool {
 	if len(lastRunConfig.RunningApps) == 0 {
-		fmt.Fprintf(os.Stdin, "No applications were found to run in history\n")
+		fmt.Fprintf(conf.OS_STDIN, "No applications were found to be running in history\n")
 		return true
 	}
 
-	fmt.Fprintf(os.Stdin, "Running applications:\n")
+	fmt.Fprintf(conf.OS_STDIN, "Running applications:\n")
 	for _, app := range lastRunConfig.RunningApps {
-		fmt.Fprintf(os.Stdin, "  * %s on PID: %d\n", app.Name, app.PID)
+		fmt.Fprintf(conf.OS_STDIN, "  * %s on PID: %d\n", app.Name, app.PID)
 	}
 	return true
 }
@@ -110,7 +110,7 @@ func KillApplication(fileConfig *conf.FileConfig, killOptions *conf.KillOptions,
 	}
 
 	if len(lastRunConfig.RunningApps) == 0 {
-		fmt.Fprintf(os.Stdin, "No processes are found to run kill\n")
+		fmt.Fprintf(conf.OS_STDIN, "No processes are found to run kill\n")
 	} else if killOptions.KillType == conf.KILL_ALL {
 		for _, pkg := range fileConfig.Pkg {
 			for currentRunningAppIdx, runningApp := range lastRunConfig.RunningApps {
@@ -121,9 +121,9 @@ func KillApplication(fileConfig *conf.FileConfig, killOptions *conf.KillOptions,
 					_, err := conf.StartProgram(true, 0, killCommand, killArgs, killEnvVars)
 
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v\n", killCommand, err)
+						fmt.Fprintf(conf.OS_STDERR, "Error occured while executing '%s', err: %v\n", killCommand, err)
 					} else {
-						fmt.Fprintf(os.Stdin, "Killed %s\n", pkg.Name)
+						fmt.Fprintf(conf.OS_STDIN, "Killed %s\n", pkg.Name)
 					}
 					lastRunConfig.RunningApps[currentRunningAppIdx].Name = ""
 
@@ -158,9 +158,9 @@ func KillApplication(fileConfig *conf.FileConfig, killOptions *conf.KillOptions,
 						cmd, err := conf.StartProgram(false, 9, command, runArgs, runEnvVars)
 
 						if err != nil {
-							fmt.Fprintf(os.Stderr, "Error occured while executing '%s', err: %v\n", *runCommand, err)
+							fmt.Fprintf(conf.OS_STDERR, "Error occured while executing '%s', err: %v\n", *runCommand, err)
 						} else {
-							fmt.Fprintf(os.Stdin, "Executing '%s', args: %v, envs: %v, PID: %d\n", *runCommand, runArgs, runEnvVars, cmd.Process.Pid)
+							fmt.Fprintf(conf.OS_STDIN, "Executing '%s', args: %v, envs: %v, PID: %d\n", *runCommand, runArgs, runEnvVars, cmd.Process.Pid)
 							lastRunConfig.RunningApps = append(lastRunConfig.RunningApps, conf.ProcessPidPair{Name: pkg.Name, PID: cmd.Process.Pid})
 						}
 					}

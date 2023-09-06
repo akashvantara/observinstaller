@@ -39,12 +39,12 @@ func ConfigureDownloadFlagSet(configure bool, flag *flag.FlagSet) *conf.Download
 	}
 
 	if *localHelpShortFlag || totalActivatedOptions == 0 {
-		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(conf.OS_STDERR, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
 		flag.PrintDefaults()
 	} else if totalActivatedOptions == 1 {
 	} else {
-		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
-		fmt.Fprintf(os.Stderr, "Only one of the options is allowed at a time\n")
+		fmt.Fprintf(conf.OS_STDERR, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(conf.OS_STDERR, "Only one of the options is allowed at a time\n")
 		flag.PrintDefaults()
 	}
 
@@ -90,12 +90,12 @@ func ConfigureRunFlagSet(configure bool, flag *flag.FlagSet) *conf.RunOptions {
 	}
 
 	if *localHelpShortFlag || totalActivatedOptions == 0 {
-		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(conf.OS_STDERR, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
 		flag.PrintDefaults()
 	} else if totalActivatedOptions == 1 {
 	} else {
-		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
-		fmt.Fprintf(os.Stderr, "Only one of the options is allowed at a time\n")
+		fmt.Fprintf(conf.OS_STDERR, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(conf.OS_STDERR, "Only one of the options is allowed at a time\n")
 		flag.PrintDefaults()
 	}
 
@@ -126,7 +126,7 @@ func ConfigureKillFlagSet(configure bool, flag *flag.FlagSet) *conf.KillOptions 
 	}
 
 	if *localHelpShortFlag || totalActivatedOptions == 0 {
-		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(conf.OS_STDERR, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
 		flag.PrintDefaults()
 	} else if *allFlag {
 		killOptions = &conf.KillOptions{KillType: conf.KILL_ALL, Restart: false}
@@ -176,12 +176,12 @@ func ConfigureRemoveFlagSet(configure bool, flag *flag.FlagSet) *conf.RemoveOpti
 	}
 
 	if *localHelpShortFlag || totalActivatedOptions == 0 {
-		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(conf.OS_STDERR, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
 		flag.PrintDefaults()
 	} else if totalActivatedOptions == 1 {
 	} else {
-		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
-		fmt.Fprintf(os.Stderr, "Only one of the options is allowed at a time\n")
+		fmt.Fprintf(conf.OS_STDERR, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(conf.OS_STDERR, "Only one of the options is allowed at a time\n")
 		flag.PrintDefaults()
 	}
 
@@ -222,12 +222,12 @@ func ConfigureOtelFlagSet(configure bool, flag *flag.FlagSet) *conf.OtelOptions 
 	}
 
 	if *localHelpShortFlag || totalActivatedOptions == 0 {
-		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(conf.OS_STDERR, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
 		flag.PrintDefaults()
 	} else if totalActivatedOptions == 1 {
 	} else {
-		fmt.Fprintf(os.Stderr, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
-		fmt.Fprintf(os.Stderr, "Only one of the options is allowed at a time\n")
+		fmt.Fprintf(conf.OS_STDERR, "USAGE: %s %s [OPTIONS]\n", conf.PROG_NAME, flag.Name())
+		fmt.Fprintf(conf.OS_STDERR, "Only one of the options is allowed at a time\n")
 		flag.PrintDefaults()
 	}
 
