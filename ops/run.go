@@ -95,13 +95,11 @@ func KillApplication(fileConfig *conf.FileConfig, killOptions *conf.KillOptions,
 	var killCommand string
 	var killArgs []string
 	var killEnvVars []string
-	var argIdx int8 = 0
 	switch conf.OS_TYPE {
 	case conf.OS_WIN:
 		killCommand = "taskkill"
 		killArgs = make([]string, 4)
-		killArgs[argIdx] = "/PID"
-		argIdx += 1
+		killArgs[0] = "/PID"
 	case conf.OS_LIN:
 		fallthrough
 	case conf.OS_MAC:
@@ -115,9 +113,13 @@ func KillApplication(fileConfig *conf.FileConfig, killOptions *conf.KillOptions,
 		for _, pkg := range fileConfig.Pkg {
 			for currentRunningAppIdx, runningApp := range lastRunConfig.RunningApps {
 				if runningApp.Name == pkg.Name {
-					killArgs[1] = strconv.Itoa(runningApp.PID)
-					killArgs[2] = "/F"
-					killArgs[3] = "/T"
+					if conf.OS_TYPE == conf.OS_WIN {
+						killArgs[1] = strconv.Itoa(runningApp.PID)
+						killArgs[2] = "/F"
+						killArgs[3] = "/T"
+					} else {
+						killArgs[0] = strconv.Itoa(runningApp.PID)
+					}
 					_, err := conf.StartProgram(true, 0, killCommand, killArgs, killEnvVars)
 
 					if err != nil {

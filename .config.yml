@@ -24,7 +24,7 @@ baseOtelConfig:
       processors:
         - attributes/insert
       exporters:
-        - logging
+        []
 packages:
   - name: Grafana
     url:
@@ -109,5 +109,15 @@ packages:
         mac: "openobserve"
       args: []
       envVariables: ["ZO_ROOT_USER_EMAIL=admin@hv.com", "ZO_ROOT_USER_PASSWORD=admin"]
+    pkgOtelConfig:
+      type: exporters
+      pipeline: traces
+      config: >
+        otlphttp/openobserve:
+          traces_endpoint: http://localhost:5080/api/default/traces
+          headers:
+            Authorization: "Basic YWthc2guY2hhbmRyYUBodi5jb206amlER0tBaXdFYjlWU0Mwcw=="
+          tls:
+            insecure: true
     installModeSupport:
       - minimal
